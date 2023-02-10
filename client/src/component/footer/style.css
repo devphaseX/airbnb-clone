@@ -1,0 +1,124 @@
+.footer {
+  position: fixed;
+  font-size: 1.6rem;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.footer__collapse {
+  padding: 2rem;
+  border-top: 2px solid rgb(226, 226, 226);
+}
+
+.footer__collapse-wrapper {
+  display: flex;
+  justify-content: space-between;
+  --link-item-gap: 2.4rem;
+}
+
+.footer__expand {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background-color: #fff;
+  width: 100%;
+  z-index: 40;
+  height: min-content;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.footer__expand-wrapper {
+  padding-block: 64px;
+}
+.footer__expand--hide {
+  transform: translateY(100%);
+}
+
+.footer__links-wrapper {
+  color: #7c7c7c;
+}
+
+.footer__links-wrapper li {
+  position: relative;
+  padding-left: var(--link-item-gap);
+}
+
+.footer__links-wrapper li::before {
+  position: absolute;
+  content: '';
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background-color: currentColor;
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -100%);
+}
+
+.footer__expand--show {
+  transition: transform 0.1s ease-in;
+  transition-delay: 0.1s;
+  transform: translateY(0);
+}
+
+.footer__expand--show + .footer__backdrop {
+  display: block;
+}
+
+.footer__backdrop {
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 30;
+  background-color: rgba(0, 0, 0, 0.418);
+  transform: translateY(0);
+}
+
+.footer__links-wrapper,
+.footer__links {
+  display: flex;
+}
+
+.footer__links {
+  column-gap: var(--link-item-gap);
+  text-transform: capitalize;
+}
+
+.footer__links li {
+  display: inline-flex;
+  column-gap: 8px;
+}
+
+.footer__copy {
+  margin-right: var(--link-item-gap);
+}
+
+.nav__expand-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.footer__links-support {
+  display: flex;
+  align-items: center;
+}
+
+.footer__link-title,
+.footer__expand-links li:not(:last-child) {
+  margin-bottom: 1.6rem;
+}
+
+.footer__link-title {
+  text-transform: capitalize;
+}
+
+.footer__expand-links li {
+  font-size: 1.4rem;
+  color: #5c5c5c;
+  font-weight: 500;
+}
