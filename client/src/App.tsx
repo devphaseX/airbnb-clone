@@ -1,6 +1,8 @@
-
+import 'remixicon/fonts/remixicon.css';
+import './style/index.css';
+import { PageRoute } from './component/route';
 function App() {
-  return <div>Hello</div>
+  return <PageRoute />;
 }
 
 export default App;
