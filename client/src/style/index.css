@@ -1,0 +1,128 @@
+@import url(./font.css);
+
+*,
+*:before,
+*:after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-size: 64.5%;
+  text-rendering: optimizeLegibility;
+  font-family: 'Circular', sans-serif;
+}
+
+input,
+a {
+  outline: none;
+  border: none;
+  font: inherit;
+}
+
+img {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+}
+
+:root {
+  --max-width: min(1350px, 85vw);
+  --dls19-brand-color: #ff385c !important;
+  --dls19-ui-brand-color: #222222 !important;
+
+  --dls19-brand-gradient: linear-gradient(
+    to right,
+    #e61e4d 0%,
+    #e31c5f 50%,
+    #d70466 100%
+  ) !important;
+
+  /* --dls19-pdp-listing-title-weight: 600 !important;
+  --dls19-pdp-listing-title-size: 26px !important;
+  --dls19-pdp-listing-title-line-height: 30px !important;
+  --dls19-brand-gradient: -moz-linear-gradient(
+    to right,
+    #e61e4d 0%,
+    #e31c5f 50%,
+    #d70466 100%
+  ) !important;
+    --dls19-brand-gradient: -webkit-linear-gradient(
+    to right,
+    #e61e4d 0%,
+    #e31c5f 50%,
+    #d70466 100%
+  ) !important;
+  --dls19-brand-gradient-radial: -webkit-radial-gradient(
+    circle at center,
+    #ff385c 0%,
+    #e61e4d 27.5%,
+    #e31c5f 40%,
+    #d70466 57.5%,
+    #bd1e59 75%,
+    #bd1e59 100%
+  ) !important;
+  --dls19-brand-gradient-radial: -moz-radial-gradient(
+    circle at center,
+    #ff385c 0%,
+    #e61e4d 27.5%,
+    #e31c5f 40%,
+    #d70466 57.5%,
+    #bd1e59 75%,
+    #bd1e59 100%
+  ) !important;
+  --dls19-brand-gradient-radial: radial-gradient(
+    circle at center,
+    #ff385c 0%,
+    #e61e4d 27.5%,
+    #e31c5f 40%,
+    #d70466 57.5%,
+    #bd1e59 75%,
+    #bd1e59 100%
+  ) !important;
+  color: #222222 !important;
+  line-height: 20px !important;
+  --dls19-brand-gradient-accent: #ff385c !important;
+  --gp-section-compact-padding: 32px !important;
+  --gp-section-compact-padding-condensed: 16px !important;
+  --gp-section-standard-padding: 48px !important;
+  --gp-section-standard-padding-condensed: 24px !important; */
+}
+
+.section-wrapper {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+.layout {
+  display: grid;
+  grid-template-rows: min-content auto;
+  min-height: 100vh;
+}
+
+ul {
+  list-style: none;
+}
+
+.disable-scroll {
+  scrollbar-width: 0;
+}
+
+button {
+  font: inherit;
+}
+
+button::placeholder {
+  font: inherit;
+}
+
+a {
+  font: inherit;
+  text-decoration: none;
+}
+
+svg {
+  font-size: 0;
+}
