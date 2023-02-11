@@ -217,12 +217,14 @@
 }
 
 .name-wrapper .input-wrapper:first-of-type {
-  border-bottom-color: transparent;
+  /* border-bottom-color: transparent; */
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+  border-bottom-width: 1px;
 }
 
 .name-wrapper .input-wrapper:nth-of-type(2) {
+  border-top-width: 1px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -234,9 +236,20 @@
 .name-wrapper
   .input-wrapper[focused]:first-of-type
   ~ .input-wrapper:not([focused]):nth-of-type(2) {
-  border-top-color: transparent;
+  border-top-color: var(--border);
+}
+
+.name-wrapper[last-input-active] .input-wrapper:first-of-type {
+  border-bottom-color: var(--border);
 }
 
 .auth-section[type='register'] .auth__verify-btn {
   margin-top: 1.6rem;
+}
+
+.password-register {
+  font-size: 1.4rem;
+  border-bottom: 2px solid #000;
+  line-height: 0.9;
+  cursor: pointer;
 }

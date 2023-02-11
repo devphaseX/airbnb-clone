@@ -13,6 +13,9 @@ type InputProps = {
   labelClass?: string;
   defaultValue?: string;
   disabled?: boolean;
+  value?: string;
+  onInputFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  onInputBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
   Icon?: () => React.ReactElement;
 } & UseFormProps;
 
@@ -25,6 +28,9 @@ const _Input = (
     labelClass,
     Icon,
     defaultValue,
+    value,
+    onInputFocus,
+    onInputBlur,
     ...rest
   }: InputProps,
   ref?: LegacyRef<HTMLInputElement>
@@ -49,12 +55,16 @@ const _Input = (
         ref={inputRef}
         defaultValue={defaultValue}
         id={formID}
-        onFocus={() =>
-          labelRef.current && labelRef.current.toggleAttribute('focused', true)
-        }
-        onBlur={() =>
-          labelRef.current && labelRef.current.toggleAttribute('focused', false)
-        }
+        onFocus={(event) => {
+          labelRef.current && labelRef.current.toggleAttribute('focused', true);
+          onInputFocus?.(event);
+        }}
+        onBlur={(event) => {
+          labelRef.current &&
+            labelRef.current.toggleAttribute('focused', false);
+          onInputBlur?.(event);
+        }}
+        value={value}
       />
       <p className={labelClass}>{label}</p>
       {Icon && <Icon />}
