@@ -122,3 +122,7 @@
   color: #5c5c5c;
   font-weight: 500;
 }
+
+.expand__icon {
+  cursor: pointer;
+}
