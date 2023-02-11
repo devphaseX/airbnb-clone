@@ -112,6 +112,26 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
   const { register, handleSubmit } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const { email, setEmail } = useStore(lockEmailStore);
+
+  const PasswordInput = () => (
+    <Input
+      type={showPassword ? 'text' : 'password'}
+      inputClass="text__input"
+      label="password"
+      labelClass="text__input-label"
+      placeholder="Password"
+      {...register('password')}
+      Icon={() => (
+        <span
+          className="password-icon"
+          onClick={() => setShowPassword((status) => !status)}
+        >
+          {showPassword ? <Show /> : <Hide />}
+        </span>
+      )}
+    />
+  );
+
   return (
     <>
       <form
@@ -133,23 +153,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
             {...register('email')}
           />
         ) : (
-          <Input
-            type={showPassword ? 'text' : 'password'}
-            inputClass="text__input"
-            label="password"
-            labelClass="text__input-label"
-            placeholder="Password"
-            value=""
-            {...register('password')}
-            Icon={() => (
-              <span
-                className="password-icon"
-                onClick={() => setShowPassword((status) => !status)}
-              >
-                {showPassword ? <Show /> : <Hide />}
-              </span>
-            )}
-          />
+          <PasswordInput />
         )}
 
         <button className="auth__verify-btn" type="submit">
