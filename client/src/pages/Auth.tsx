@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+import { createStore, useStore } from 'zustand';
 import '../style/login.css';
 import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
 import { Input } from '../ui/input';
 import { useEffect } from 'react';
 import { useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { authRoutePattern } from '../util';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -25,16 +28,38 @@ type RegisterFormData = LoginFormData & {
 
 type AuthFormData = LoginFormData | RegisterFormData;
 
+type LockEmailStore = { email: string; setEmail: (email: string) => void };
+
+const lockEmailStore = createStore<LockEmailStore>((set) => ({
+  email: '',
+  setEmail: (email: string) => set({ email }),
+}));
+
 const Authenicate = () => {
   const [authStep, setAuthStep] = useState<AuthStep>('verify');
   const formProps = useForm<Partial<AuthFormData>>({ values: { email: '' } });
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { pathname } = useLocation();
+  const prevPathname = useRef(pathname);
+  const { setEmail } = useStore(lockEmailStore);
+
+  useEffect(() => {
+    if (pathname !== prevPathname.current && pathname === 'login') {
+      setAuthStep('verify');
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (authStep !== 'password' && sectionRef.current) {
       sectionRef.current.setAttribute('type', authStep);
     }
   }, [authStep]);
+
+  useEffect(() => {
+    if (!authRoutePattern.test(pathname)) {
+      setEmail('');
+    }
+  }, []);
 
   return (
     <section className="auth-section" ref={sectionRef}>
@@ -69,20 +94,15 @@ type LogUserInProps = {
 };
 
 const LogUserIn = ({ step, setStep }: LogUserInProps) => {
-  const { register, handleSubmit, unregister: unregisterInputEl } = useForm();
+  const { register, handleSubmit } = useForm();
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    if (step === 'verify') {
-      unregisterInputEl('email');
-      unregisterInputEl('password');
-    }
-  }, []);
+  const { setEmail } = useStore(lockEmailStore);
 
   return (
     <>
       <form
-        onSubmit={handleSubmit((_data) => {
+        onSubmit={handleSubmit((data) => {
+          setEmail(data.email);
           setStep('register');
         })}
       >
@@ -136,17 +156,10 @@ const ExternalPlatformAuth = () => (
 );
 
 const Register = () => {
-  const { getValues, register, unregister } =
-    useFormContext<RegisterFormData>();
+  const { getValues, register } = useFormContext<RegisterFormData>();
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    unregister('email');
-    unregister('password');
-    unregister('first_name');
-    unregister('last_name');
-    unregister('birthday');
-  }, []);
+  const { email } = useStore(lockEmailStore);
+  console.log({ email });
   return (
     <form className="form__register">
       <div className="name-wrapper">
@@ -188,9 +201,10 @@ const Register = () => {
           inputClass="text__input"
           label="email"
           labelClass="text__input-label"
-          placeholder="Email"
+          placeholder={email.toLowerCase() || 'Email'}
           {...register('email')}
-          defaultValue={getValues().email}
+          defaultValue={email}
+          disabled={email !== ''}
         />
         <p>We'll email you tip confirmations and receipts.</p>
       </div>
