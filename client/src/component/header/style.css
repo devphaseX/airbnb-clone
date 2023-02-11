@@ -86,17 +86,24 @@
 .group__2 {
   display: inline-flex;
   align-items: center;
-  border: 2px solid #dbdbdb;
+  border: 1px solid var(--gray-1);
   padding-block: 2px;
   padding-inline: 12px 2px;
   border-radius: 50px;
   column-gap: 1rem;
 }
 
+/* 
+.group_2:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+   
+*/
+
 .product-action {
   display: flex;
   align-items: center;
   column-gap: 1.5rem;
+  position: relative;
 }
 
 .person-icon {
@@ -107,4 +114,10 @@
   display: inline-block !important;
   width: 28px !important;
   height: 28px !important;
+}
+
+.menu-list-wrapper {
+  position: absolute;
+  bottom: 0;
+  transform: translateY(104%);
 }
