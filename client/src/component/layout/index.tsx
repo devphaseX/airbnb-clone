@@ -3,11 +3,13 @@ import { Header } from '../header/';
 import { Footer } from '../footer';
 const Layout = () => {
   const { pathname } = useLocation();
+  const shouldOmitFooter = /^[/]?(?:login|signup)/.test(pathname);
+
   return (
     <div className="layout">
       <Header />
       <Outlet />
-      {!/^[/]?login/.test(pathname) ? <Footer /> : null}
+      {!shouldOmitFooter ? <Footer /> : null}
     </div>
   );
 };
