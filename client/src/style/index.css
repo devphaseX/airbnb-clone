@@ -40,6 +40,9 @@ img {
     #d70466 100%
   ) !important;
 
+  --border: #222222;
+  --gray-1: #dddddd;
+
   /* --dls19-pdp-listing-title-weight: 600 !important;
   --dls19-pdp-listing-title-size: 26px !important;
   --dls19-pdp-listing-title-line-height: 30px !important;

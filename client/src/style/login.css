@@ -13,7 +13,7 @@
   flex-direction: column;
   border: 2px solid #bbbbbb;
   border-radius: 20px;
-  max-width: 578px;
+  max-width: 528px;
   width: 100%;
 }
 
@@ -42,6 +42,15 @@
   position: relative;
   padding-block: 2rem;
   border-radius: 10px;
+  cursor: text;
+}
+
+.input-wrapper[aria-disabled] {
+  cursor: pointer;
+}
+
+.input-wrapper[focused] {
+  border-color: var(--border);
 }
 
 .text__input {
@@ -56,10 +65,13 @@
   font-size: var(--input-text-size);
 }
 
+.input-wrapper[aria-disabled] .text__input {
+  cursor: pointer;
+}
+
 .text__input::placeholder {
   left: 1rem;
   font-size: var(--input-text-size);
-  text-transform: capitalize;
   color: #7c7b7b;
 }
 
@@ -81,7 +93,7 @@
 .text__input:focus + .text__input-label {
   top: 25%;
   visibility: visible;
-  transition: visibility 0.3s ease-in;
+  transition: visibility 0.3s ease-in, top 0.3s ease-out;
   font-size: 1.1rem;
 }
 
@@ -93,13 +105,14 @@
   display: inline-block;
   width: 100%;
   font: inherit;
-  font-size: 1.2rem;
+  font-size: 1.6rem;
   color: #fff;
   border: none;
   background: var(--dls19-brand-gradient);
   margin-top: 1rem;
   padding-block: 1.6rem;
   border-radius: 10px;
+  min-height: 48px;
 }
 
 .auth__external-wrapper {
@@ -107,7 +120,7 @@
 }
 
 .auth__external-wrapper > p:first-child {
-  font-size: 1rem;
+  font-size: 1.2rem;
   display: grid;
   grid-template-columns: 1fr min-content 1fr;
   align-items: center;
@@ -137,10 +150,12 @@
   display: flex;
   width: 100%;
   font-size: 1.4rem;
-  border: 2px solid #646464;
-  padding: 1rem 2rem;
+  border: 1px solid #222222;
+  padding: 5px 5px 5px 12px;
   border-radius: 10px;
   color: #000;
+  min-height: 48px;
+  align-items: center;
 }
 
 .external__icon {
@@ -173,7 +188,7 @@
 
 .form__register > div > p,
 .term-and-condition {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   margin-top: 10px;
 }
 
@@ -202,7 +217,7 @@
 }
 
 .name-wrapper .input-wrapper:first-of-type {
-  border-bottom: none;
+  border-bottom-color: transparent;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -210,6 +225,16 @@
 .name-wrapper .input-wrapper:nth-of-type(2) {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+.name-wrapper .input-wrapper[focused]:first-of-type {
+  border-bottom-color: var(--border);
+}
+
+.name-wrapper
+  .input-wrapper[focused]:first-of-type
+  ~ .input-wrapper:not([focused]):nth-of-type(2) {
+  border-top-color: transparent;
 }
 
 .auth-section[type='register'] .auth__verify-btn {
