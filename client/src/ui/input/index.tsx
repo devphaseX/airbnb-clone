@@ -1,6 +1,9 @@
 import { UseFormProps } from 'react-hook-form';
 import { forwardRef } from 'react';
 import { LegacyRef } from 'react';
+import { useId } from 'react';
+import { useRef } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 
 type InputProps = {
   type: React.HTMLInputTypeAttribute;
@@ -9,6 +12,7 @@ type InputProps = {
   inputClass?: string;
   labelClass?: string;
   defaultValue?: string;
+  disabled?: boolean;
   Icon?: () => React.ReactElement;
 } & UseFormProps;
 
@@ -24,20 +28,39 @@ const _Input = (
     ...rest
   }: InputProps,
   ref?: LegacyRef<HTMLInputElement>
-) => (
-  <div className="input-wrapper">
-    <input
-      type={type}
-      placeholder={placeholder}
-      className={inputClass}
-      {...rest}
-      ref={ref}
-      defaultValue={defaultValue}
-    />
-    <p className={labelClass}>{label}</p>
-    {Icon && <Icon />}
-  </div>
-);
+) => {
+  const formID = useId();
+  const inputRef = ref || useRef<HTMLInputElement | null>(null);
+  const labelRef = useRef<HTMLLabelElement | null>(null);
+
+  return (
+    <label
+      className="input-wrapper"
+      id={formID}
+      style={{ display: 'block' }}
+      ref={labelRef}
+      {...{ 'aria-disabled': rest.disabled ?? undefined }}
+    >
+      <input
+        type={type}
+        placeholder={placeholder}
+        className={inputClass}
+        {...rest}
+        ref={inputRef}
+        defaultValue={defaultValue}
+        id={formID}
+        onFocus={() =>
+          labelRef.current && labelRef.current.toggleAttribute('focused', true)
+        }
+        onBlur={() =>
+          labelRef.current && labelRef.current.toggleAttribute('focused', false)
+        }
+      />
+      <p className={labelClass}>{label}</p>
+      {Icon && <Icon />}
+    </label>
+  );
+};
 
 const Input = forwardRef<HTMLInputElement, InputProps>(_Input);
 
