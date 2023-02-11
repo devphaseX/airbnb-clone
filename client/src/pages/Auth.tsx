@@ -42,7 +42,7 @@ const lockEmailStore = createStore<LockEmailStore>((set) => ({
 
 const Authenicate = () => {
   const [authStep, setAuthStep] = useState<AuthStep>('verify');
-  const formProps = useForm<Partial<AuthFormData>>({ values: { email: '' } });
+  const formProps = useForm<Partial<AuthFormData>>();
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
   const prevPathname = useRef('');
@@ -53,11 +53,10 @@ const Authenicate = () => {
     let path: string;
     if (
       !pathMatch ||
-      prevPathname.current === (path = pathname[1].toLowerCase())
+      prevPathname.current === (path = pathMatch[1].toLowerCase())
     ) {
       return;
     }
-
     if (
       path === 'login' &&
       (authStep === 'register' || authStep === 'password')
@@ -112,15 +111,14 @@ type LogUserInProps = {
 const LogUserIn = ({ step, setStep }: LogUserInProps) => {
   const { register, handleSubmit } = useForm();
   const [showPassword, setShowPassword] = useState(false);
-  const { setEmail } = useStore(lockEmailStore);
-  const navigate = useNavigate();
+  const { email, setEmail } = useStore(lockEmailStore);
   return (
     <>
       <form
         onSubmit={handleSubmit((data) => {
           setEmail(data.email);
-          setStep('register');
-          navigate('/signup');
+          setStep('password');
+          // navigate('/signup');
         })}
       >
         <h3 className="auth-welcome-message">Welcome to Airbnb</h3>
@@ -131,6 +129,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
             label="email"
             labelClass="text__input-label"
             placeholder="Email"
+            defaultValue={email || ''}
             {...register('email')}
           />
         ) : (
@@ -140,6 +139,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
             label="password"
             labelClass="text__input-label"
             placeholder="Password"
+            value=""
             {...register('password')}
             Icon={() => (
               <span
@@ -173,10 +173,22 @@ const ExternalPlatformAuth = () => (
 );
 
 const Register = () => {
-  const { getValues, register } = useFormContext<RegisterFormData>();
+  const { register } = useFormContext<RegisterFormData>();
   const [showPassword, setShowPassword] = useState(false);
   const { email } = useStore(lockEmailStore);
-  console.log({ email });
+
+  const createFocusHandler =
+    (force: boolean) =>
+    ({ target }: React.FocusEvent<HTMLInputElement>) => {
+      const nameElementWrapper = target.closest(
+        '.name-wrapper'
+      ) as HTMLDivElement | null;
+
+      if (!nameElementWrapper) return;
+
+      nameElementWrapper.toggleAttribute('last-input-active', force);
+    };
+
   return (
     <form className="form__register">
       <div className="name-wrapper">
@@ -195,6 +207,8 @@ const Register = () => {
           inputClass="text__input"
           labelClass="text__input-label"
           placeholder="last name"
+          onInputFocus={createFocusHandler(true)}
+          onInputBlur={createFocusHandler(false)}
         />
         <p>Make sure it matches the name on your Government ID card.</p>
       </div>
@@ -235,7 +249,7 @@ const Register = () => {
           {...register('password')}
           Icon={() => (
             <span
-              className="password-register"
+              className="password-icon password-register"
               onClick={() => setShowPassword((status) => !status)}
             >
               {showPassword ? 'hide' : 'show'}
