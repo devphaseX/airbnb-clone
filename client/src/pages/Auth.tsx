@@ -7,7 +7,7 @@ import { Hide, Show } from '../ui/icon/password';
 import { Input } from '../ui/input';
 import { useEffect } from 'react';
 import { useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { authRoutePattern } from '../util';
 
 type AuthStep = 'verify' | 'password' | 'register';
@@ -28,11 +28,16 @@ type RegisterFormData = LoginFormData & {
 
 type AuthFormData = LoginFormData | RegisterFormData;
 
-type LockEmailStore = { email: string; setEmail: (email: string) => void };
+type LockEmailStore = {
+  email: string;
+  setEmail: (email: string) => void;
+  resetEmail: () => void;
+};
 
 const lockEmailStore = createStore<LockEmailStore>((set) => ({
   email: '',
   setEmail: (email: string) => set({ email }),
+  resetEmail: () => set({ email: '' }),
 }));
 
 const Authenicate = () => {
@@ -40,13 +45,26 @@ const Authenicate = () => {
   const formProps = useForm<Partial<AuthFormData>>({ values: { email: '' } });
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
-  const prevPathname = useRef(pathname);
-  const { setEmail } = useStore(lockEmailStore);
+  const prevPathname = useRef('');
+  const { resetEmail } = useStore(lockEmailStore);
 
   useEffect(() => {
-    if (pathname !== prevPathname.current && pathname === 'login') {
+    const pathMatch = authRoutePattern.exec(pathname);
+    let path: string;
+    if (
+      !pathMatch ||
+      prevPathname.current === (path = pathname[1].toLowerCase())
+    ) {
+      return;
+    }
+
+    if (
+      path === 'login' &&
+      (authStep === 'register' || authStep === 'password')
+    ) {
       setAuthStep('verify');
     }
+    prevPathname.current = path;
   }, [pathname]);
 
   useEffect(() => {
@@ -56,9 +74,7 @@ const Authenicate = () => {
   }, [authStep]);
 
   useEffect(() => {
-    if (!authRoutePattern.test(pathname)) {
-      setEmail('');
-    }
+    if (!authRoutePattern.test(pathname)) resetEmail();
   }, []);
 
   return (
@@ -97,13 +113,14 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
   const { register, handleSubmit } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const { setEmail } = useStore(lockEmailStore);
-
+  const navigate = useNavigate();
   return (
     <>
       <form
         onSubmit={handleSubmit((data) => {
           setEmail(data.email);
           setStep('register');
+          navigate('/signup');
         })}
       >
         <h3 className="auth-welcome-message">Welcome to Airbnb</h3>
