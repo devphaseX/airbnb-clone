@@ -64,7 +64,6 @@ const _Input = (
             labelRef.current.toggleAttribute('focused', false);
           onInputBlur?.(event);
         }}
-        value={value}
       />
       <p className={labelClass}>{label}</p>
       {Icon && <Icon />}

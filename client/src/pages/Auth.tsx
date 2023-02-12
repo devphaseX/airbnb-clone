@@ -1,18 +1,17 @@
-import { useState } from 'react';
+import { useState, useId, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { createStore, useStore } from 'zustand';
 import '../style/login.css';
 import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
 import { Input } from '../ui/input';
-import { useEffect } from 'react';
-import { useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { authRoutePattern } from '../util';
+import { resumePage } from '../store/slice/resumePage';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
-type AuthButtonMessage = Record<AuthStep, string>;
+type AuthButtonMessage = Record<Exclude<AuthStep, 'complete'>, string>;
 const authMessage = {
   verify: 'Continue',
   password: 'Log in',
@@ -21,8 +20,8 @@ const authMessage = {
 
 type LoginFormData = { email: string; password: string };
 type RegisterFormData = LoginFormData & {
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   birthday: string;
 };
 
@@ -46,7 +45,15 @@ const Authenicate = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
   const prevPathname = useRef('');
+  const { resetPath } = useStore(resumePage);
   const { resetEmail } = useStore(lockEmailStore);
+
+  useEffect(() => {
+    return () => {
+      resetPath();
+      resetEmail();
+    };
+  }, []);
 
   useEffect(() => {
     const pathMatch = authRoutePattern.exec(pathname);
@@ -93,7 +100,7 @@ const Authenicate = () => {
               {authStep !== 'register' ? (
                 <LogUserIn step={authStep} setStep={setAuthStep} />
               ) : (
-                <Register />
+                <Register setStep={setAuthStep} />
               )}
             </div>
           </FormProvider>
@@ -103,47 +110,65 @@ const Authenicate = () => {
   );
 };
 
-type LogUserInProps = {
-  step: Exclude<AuthStep, 'register'>;
+type AuthStage = {
+  step: Exclude<AuthStep, 'register' | 'complete'>;
   setStep: (nextStep: AuthStep) => void;
 };
 
+type LogUserInProps = AuthStage;
+
 const LogUserIn = ({ step, setStep }: LogUserInProps) => {
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit } = useForm<LoginFormData>();
   const [showPassword, setShowPassword] = useState(false);
   const { email, setEmail } = useStore(lockEmailStore);
-
-  const PasswordInput = () => (
-    <Input
-      type={showPassword ? 'text' : 'password'}
-      inputClass="text__input"
-      label="password"
-      labelClass="text__input-label"
-      placeholder="Password"
-      {...register('password')}
-      Icon={() => (
-        <span
-          className="password-icon"
-          onClick={() => setShowPassword((status) => !status)}
-        >
-          {showPassword ? <Show /> : <Hide />}
-        </span>
-      )}
-    />
-  );
+  const { path } = useStore(resumePage);
+  const navigate = useNavigate();
+  const emailId = `email:${useId()}`;
+  const passwordId = `password:${useId()}`;
 
   return (
     <>
       <form
         onSubmit={handleSubmit((data) => {
-          setEmail(data.email);
-          setStep('password');
-          // navigate('/signup');
+          if (step === 'verify') {
+            fetch('http://127.0.0.1:5001/auth/verify', {
+              body: JSON.stringify({ email: data.email }),
+              headers: new Headers([['content-type', 'application/json']]),
+              method: 'POST',
+            }).then((response) => {
+              if (response.ok) {
+                return response.json().then((data) => {
+                  if (data.exist) {
+                    setStep('password');
+                  } else {
+                    setEmail(data.email);
+                    setStep('register');
+                  }
+                });
+              }
+            });
+          } else if (step === 'password') {
+            fetch('http://127.0.0.1:5001/auth/login', {
+              body: JSON.stringify({
+                email: data.email,
+                password: data.password,
+              }),
+              headers: new Headers([['content-type', 'application/json']]),
+              method: 'POST',
+            }).then((response) => {
+              if (response.ok) {
+                return response.json().then((data) => {
+                  navigate(path);
+                });
+              }
+            });
+          }
         })}
       >
         <h3 className="auth-welcome-message">Welcome to Airbnb</h3>
         {step === 'verify' ? (
           <Input
+            key={emailId}
             type="email"
             inputClass="text__input"
             label="email"
@@ -153,7 +178,23 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
             {...register('email')}
           />
         ) : (
-          <PasswordInput />
+          <Input
+            key={passwordId}
+            type={showPassword ? 'text' : 'password'}
+            inputClass="text__input"
+            label="password"
+            labelClass="text__input-label"
+            placeholder="Password"
+            {...register('password')}
+            Icon={() => (
+              <span
+                className="password-icon"
+                onClick={() => setShowPassword((status) => !status)}
+              >
+                {showPassword ? <Show /> : <Hide />}
+              </span>
+            )}
+          />
         )}
 
         <button className="auth__verify-btn" type="submit">
@@ -176,8 +217,9 @@ const ExternalPlatformAuth = () => (
   </div>
 );
 
-const Register = () => {
-  const { register } = useFormContext<RegisterFormData>();
+type RegisterProps = Omit<AuthStage, 'step'>;
+const Register = ({}: RegisterProps) => {
+  const { register, handleSubmit } = useFormContext<RegisterFormData>();
   const [showPassword, setShowPassword] = useState(false);
   const { email } = useStore(lockEmailStore);
 
@@ -194,11 +236,27 @@ const Register = () => {
     };
 
   return (
-    <form className="form__register">
+    <form
+      className="form__register"
+      onSubmit={handleSubmit((formData) => {
+        fetch('http://127.0.0.1:5001/auth/create', {
+          method: 'POST',
+          body: JSON.stringify({ ...formData, email }),
+          headers: new Headers([['content-type', 'application/json']]),
+        }).then((response) => {
+          if (response.ok) {
+            return response.json().then((data) => {
+              console.log(data);
+              // navigate(path);
+            });
+          }
+        });
+      })}
+    >
       <div className="name-wrapper">
         <Input
           type="text"
-          {...register('first_name')}
+          {...register('firstName')}
           label="first name"
           inputClass="text__input"
           labelClass="text__input-label"
@@ -206,7 +264,7 @@ const Register = () => {
         />
         <Input
           type="text"
-          {...register('last_name')}
+          {...register('lastName')}
           label="last name"
           inputClass="text__input"
           labelClass="text__input-label"
@@ -238,7 +296,7 @@ const Register = () => {
           labelClass="text__input-label"
           placeholder={email.toLowerCase() || 'Email'}
           {...register('email')}
-          defaultValue={email}
+          defaultValue={email || ''}
           disabled={email !== ''}
         />
         <p>We'll email you tip confirmations and receipts.</p>
