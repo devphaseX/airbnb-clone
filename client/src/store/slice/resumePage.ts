@@ -5,7 +5,8 @@ type ResumePage = {
   setPath: (path: string) => void;
   resetPath: () => void;
 };
-const resumePage = createStore<ResumePage>((set) => ({
+
+const preAuthPageStore = createStore<ResumePage>((set) => ({
   path: '/',
   setPath(path) {
     set({ path });
@@ -15,4 +16,4 @@ const resumePage = createStore<ResumePage>((set) => ({
   },
 }));
 
-export { resumePage };
+export { preAuthPageStore };

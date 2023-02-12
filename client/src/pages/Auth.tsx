@@ -7,7 +7,8 @@ import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
 import { Input } from '../ui/input';
 import { authRoutePattern } from '../util';
-import { resumePage } from '../store/slice/resumePage';
+import { preAuthPageStore } from '../store/slice/resumePage';
+import { clientInfoStore } from '../store/slice/user';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -44,9 +45,9 @@ const Authenicate = () => {
   const formProps = useForm<Partial<AuthFormData>>();
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
-  const prevPathname = useRef('');
-  const { resetPath } = useStore(resumePage);
-  const { resetEmail } = useStore(lockEmailStore);
+  const { resetPath } = useStore(preAuthPageStore);
+  const { email, resetEmail } = useStore(lockEmailStore);
+  const navigate = useNavigate();
 
   useEffect(() => {
     return () => {
@@ -57,25 +58,35 @@ const Authenicate = () => {
 
   useEffect(() => {
     const pathMatch = authRoutePattern.exec(pathname);
-    let path: string;
-    if (
-      !pathMatch ||
-      prevPathname.current === (path = pathMatch[1].toLowerCase())
-    ) {
+    if (!pathMatch) {
       return;
     }
+
+    let path = pathMatch[1];
     if (
       path === 'login' &&
       (authStep === 'register' || authStep === 'password')
     ) {
       setAuthStep('verify');
     }
-    prevPathname.current = path;
+
+    if (path === 'signup' && email.trim()) {
+      setAuthStep('register');
+    }
+
+    if (!email.trim() && path === 'signup') {
+      navigate('/login');
+    }
   }, [pathname]);
 
   useEffect(() => {
     if (authStep !== 'password' && sectionRef.current) {
       sectionRef.current.setAttribute('type', authStep);
+    }
+    if (authStep === 'register') {
+      navigate('/signup');
+    } else if (authStep === 'verify') {
+      navigate('/login');
     }
   }, [authStep]);
 
@@ -121,18 +132,19 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
   const { register, handleSubmit } = useForm<LoginFormData>();
   const [showPassword, setShowPassword] = useState(false);
   const { email, setEmail } = useStore(lockEmailStore);
-  const { path } = useStore(resumePage);
+  const { path } = useStore(preAuthPageStore);
   const navigate = useNavigate();
   const emailId = `email:${useId()}`;
   const passwordId = `password:${useId()}`;
+  const setUser = useStore(clientInfoStore, (state) => state.setUser);
 
   return (
     <>
       <form
-        onSubmit={handleSubmit((data) => {
+        onSubmit={handleSubmit((formData) => {
           if (step === 'verify') {
             fetch('http://127.0.0.1:5001/auth/verify', {
-              body: JSON.stringify({ email: data.email }),
+              body: JSON.stringify({ email: formData.email }),
               headers: new Headers([['content-type', 'application/json']]),
               method: 'POST',
             }).then((response) => {
@@ -141,7 +153,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
                   if (data.exist) {
                     setStep('password');
                   } else {
-                    setEmail(data.email);
+                    setEmail(formData.email);
                     setStep('register');
                   }
                 });
@@ -150,14 +162,15 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
           } else if (step === 'password') {
             fetch('http://127.0.0.1:5001/auth/login', {
               body: JSON.stringify({
-                email: data.email,
-                password: data.password,
+                email: formData.email,
+                password: formData.password,
               }),
               headers: new Headers([['content-type', 'application/json']]),
               method: 'POST',
             }).then((response) => {
               if (response.ok) {
                 return response.json().then((data) => {
+                  setUser(data);
                   navigate(path);
                 });
               }
@@ -222,6 +235,9 @@ const Register = ({}: RegisterProps) => {
   const { register, handleSubmit } = useFormContext<RegisterFormData>();
   const [showPassword, setShowPassword] = useState(false);
   const { email } = useStore(lockEmailStore);
+  const setUser = useStore(clientInfoStore, (state) => state.setUser);
+  const navigate = useNavigate();
+  const path = useStore(preAuthPageStore, (state) => state.path);
 
   const createFocusHandler =
     (force: boolean) =>
@@ -246,8 +262,8 @@ const Register = ({}: RegisterProps) => {
         }).then((response) => {
           if (response.ok) {
             return response.json().then((data) => {
-              console.log(data);
-              // navigate(path);
+              setUser(data);
+              navigate(path);
             });
           }
         });
