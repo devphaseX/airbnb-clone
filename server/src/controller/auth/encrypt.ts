@@ -7,7 +7,7 @@ const encodePassword = (user: Readonly<UserCreateFormData>) => {
 };
 
 const comparePassword = (user: UserDoc, password: string) => {
-  return bcrypt.compare(user.password!, password);
+  return bcrypt.compare(password, user.password!);
 };
 
 export { encodePassword, comparePassword };

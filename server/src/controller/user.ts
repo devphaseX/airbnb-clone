@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import { RequestHandler } from 'express';
 import {
   User,
