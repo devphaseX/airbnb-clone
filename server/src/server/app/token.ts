@@ -1,10 +1,12 @@
 import jsonwebToken from 'jsonwebtoken';
 import { Response } from 'express';
 import { UserDoc } from '../../model';
+import { getEnv } from '../config/env';
+import { CookieOptions } from 'express';
 
 const secret = '__hack__this';
 function createToken(payload: UserDoc) {
-  const authExpireTime = Date.now() + 1000 * 60 * 15;
+  const authExpireTime = Date.now() + 1000 * 60 * 60 * 15;
   const authToken = jsonwebToken.sign({ email: payload.email }, secret, {
     expiresIn: authExpireTime,
   });
@@ -20,16 +22,24 @@ function createToken(payload: UserDoc) {
   };
 }
 
+const createCookieConfig = (option: CookieOptions): CookieOptions => ({
+  httpOnly: false,
+  secure: getEnv().NODE_ENV === 'production',
+  ...option,
+});
+
 function setAuthToken(res: Response<any, any>, payload: UserDoc) {
   const { auth, refresh } = createToken(payload);
-  res.cookie('jwt', auth.authToken, {
-    httpOnly: true,
-    expires: new Date(auth.authExpireTime),
-  });
-  res.cookie('jwt', refresh.refreshToken, {
-    httpOnly: true,
-    expires: new Date(refresh.refreshExpireTime),
-  });
+  res.cookie(
+    'access-token',
+    auth.authToken,
+    createCookieConfig({ maxAge: 5700000 })
+  );
+  res.cookie(
+    'refresh-token',
+    refresh.refreshToken,
+    createCookieConfig({ maxAge: 5700000 })
+  );
 }
 
 export { setAuthToken };
