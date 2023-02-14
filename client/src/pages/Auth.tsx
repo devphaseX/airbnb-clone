@@ -16,6 +16,7 @@ import {
   LoginFormData,
   RegisterFormData,
 } from '../store/api/baseUrl';
+import { useLayoutEffect } from 'react';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -43,9 +44,17 @@ const Authenicate = () => {
   const formProps = useForm<Partial<AuthFormData>>();
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
-  const { resetPath } = useStore(preAuthPageStore);
   const { email, resetEmail } = useStore(lockEmailStore);
+  const { path, resetPath } = useStore(preAuthPageStore);
   const navigate = useNavigate();
+  const user = useStore(clientInfoStore, (state) => state.user);
+
+  useLayoutEffect(() => {
+    if (user) {
+      navigate(path);
+      resetPath();
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -182,7 +191,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
               );
 
               if (response.ok) {
-                const user = await response.json();
+                const user = (await response.json()).data;
                 setUser(user);
                 navigate(path);
               } else {
