@@ -31,8 +31,8 @@ const envSchema = z.object({
   SALT_ROUND: z.number({ coerce: true }),
 } satisfies EnvSchema);
 
-const getEnv = (): ApplicationEnv =>
-  envSchema.parse(process.env) as ApplicationEnv;
+const env = envSchema.parse(process.env);
+const getEnv = (): ApplicationEnv => env as ApplicationEnv;
 
 export { getEnv };
 export type { ApplicationEnv };

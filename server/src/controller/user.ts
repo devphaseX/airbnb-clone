@@ -1,4 +1,3 @@
-import bcrypt from 'bcrypt';
 import { RequestHandler } from 'express';
 import {
   User,
@@ -18,6 +17,7 @@ const signIn: SignInHandler = async (req, res) => {
     const authData = userAuthDocSchema.parse(req.body);
     const user = await User.findOne({ email: authData.email });
     if (!user) {
+      console.log('I cannot find a');
       return res.status(404).send();
     }
 
@@ -26,7 +26,10 @@ const signIn: SignInHandler = async (req, res) => {
     }
 
     user.password = undefined;
-    setAuthToken(res, user);
+    // setAuthToken(res, user);
+    // user.see
+    (req.session as any).user = { _id: user.id, email: user.email };
+
     return res.status(200).json({ data: user });
   } catch (e) {
     console.log(e);
@@ -45,8 +48,7 @@ const createUser: CreateUserHandler = async (req, res) => {
 
     const user = await User.create(data);
     user.password = undefined;
-    setAuthToken(res, user);
-    return res.status(200).json(user);
+    return res.status(200).send();
   } catch (e) {
     console.log(e);
   }
