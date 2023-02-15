@@ -1,7 +1,8 @@
 import { useState, useId, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { redirect, useLocation, useNavigate } from 'react-router-dom';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { createStore, useStore } from 'zustand';
+import { useLayoutEffect } from 'react';
 import '../style/login.css';
 import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
@@ -16,7 +17,7 @@ import {
   LoginFormData,
   RegisterFormData,
 } from '../store/api/baseUrl';
-import { useLayoutEffect } from 'react';
+import { userSession } from '../component/layout/ReAuthUser';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -403,5 +404,17 @@ const ExternalAuth = ({ name, title, href, imgSrc }: ExternalAuthProp) => (
   </a>
 );
 
-export { Authenicate };
+async function authAccessCheck() {
+  await userSession.getState().waitForLoadingDone();
+  const user = clientInfoStore.getState().user;
+  const { path, resetPath } = preAuthPageStore.getState();
+
+  if (user) {
+    resetPath();
+    return redirect(path ?? '/');
+  }
+  return null;
+}
+
+export { Authenicate, authAccessCheck };
 export type { RegisterFormData, LoginFormData };
