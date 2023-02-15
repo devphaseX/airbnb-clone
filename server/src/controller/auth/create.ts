@@ -6,7 +6,6 @@ type CreateUserHandler = RequestHandler<any, any, Required<UserCreateFormData>>;
 const createUser: CreateUserHandler = async (req, res) => {
   try {
     const data = await userCreateDocSchema.parseAsync(req.body);
-    console.log(data);
     if (await User.findOne({ email: data.email })) {
       return res.status(305).json({});
     }

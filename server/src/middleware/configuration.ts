@@ -21,14 +21,14 @@ function mountConfig(app: Express) {
     session({
       store,
       name: 'userId',
-      secret: 'somehyj',
+      secret: 'dont even try to suggest',
       resave: false,
       saveUninitialized: false,
       cookie: {
-        // sameSite: 'strict',
-        // secure: true,
+        secure: getEnv().NODE_ENV === 'production',
         sameSite: 'none',
         httpOnly: true,
+        maxAge: 60 * 60 * 24 * 1000,
       },
     })
   );

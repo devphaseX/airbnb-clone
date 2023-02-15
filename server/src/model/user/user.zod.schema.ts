@@ -25,7 +25,7 @@ const userCreateDocSchema = z
   } satisfies UserSchemaShape)
   .refine(
     (record) =>
-      record.confirmPassword
+      typeof record.confirmPassword !== 'undefined'
         ? record.password === record.confirmPassword
         : true,
     {

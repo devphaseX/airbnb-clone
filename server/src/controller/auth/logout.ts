@@ -1,16 +1,17 @@
 import { RequestHandler } from 'express';
-import { AuthCookie } from '../../server/app/token';
 
 type LogoutUser = RequestHandler;
 const logout: LogoutUser = async (req, res) => {
   try {
-    console.log(req.cookies, req.session);
-    // const { accessToken, refreshToken } = req.cookies as AuthCookie;
-    // if (accessToken) {
-    // }
+    console.log(req.session, req.cookies);
 
-    res.clearCookie('userId');
-    res.status(204).send('ok');
+    req.session.destroy((err) => {
+      console.log('destroy session');
+      if (!err) {
+        res.clearCookie('userId');
+        res.status(204).send('ok');
+      }
+    });
   } catch (e) {}
 };
 

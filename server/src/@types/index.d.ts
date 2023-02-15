@@ -1,4 +1,6 @@
+import { Express } from 'express';
 import { ZodType } from 'zod';
+import { AuthCookie } from '../server/app/token';
 
 declare global {
   type TypedZodType<T> = {
@@ -6,4 +8,11 @@ declare global {
       ? TypedZodType<T[K]> | ZodType<T[K]>
       : ZodType<T[K]>;
   };
+
+  type Cookie = AuthCookie;
+  namespace Express {
+    export interface Request {
+      user?: any;
+    }
+  }
 }
