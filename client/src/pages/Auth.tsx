@@ -9,8 +9,8 @@ import { Input } from '../ui/input';
 import { authRoutePattern } from '../util';
 import { preAuthPageStore } from '../store/slice/resumePage';
 import { clientInfoStore } from '../store/slice/user';
-import { logUserApi, verifyUserApi } from '../store/api/loginQuery';
-import { registerUserApi } from '../store/api/registerQuery';
+import { logUserApi, verifyUserApi } from '../store/api';
+import { registerUserApi } from '../store/api/registerApi';
 import {
   AuthFormData,
   LoginFormData,
@@ -287,7 +287,7 @@ const Register = ({ setStep }: RegisterProps) => {
     <form
       className="form__register"
       onSubmit={handleSubmit(async (formData) => {
-        const response = await registerUserApi(formData);
+        const response = await registerUserApi({ ...formData, email });
         if (response.ok) setStep('password');
         else {
           //
