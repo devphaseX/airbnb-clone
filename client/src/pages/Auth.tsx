@@ -2,7 +2,6 @@ import { useState, useId, useRef, useEffect } from 'react';
 import { redirect, useLocation, useNavigate } from 'react-router-dom';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { createStore, useStore } from 'zustand';
-import { useLayoutEffect } from 'react';
 import '../style/login.css';
 import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
@@ -46,16 +45,8 @@ const Authenicate = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { pathname } = useLocation();
   const { email, resetEmail } = useStore(lockEmailStore);
-  const { path, resetPath } = useStore(preAuthPageStore);
+  const { resetPath } = useStore(preAuthPageStore);
   const navigate = useNavigate();
-  const user = useStore(clientInfoStore, (state) => state.user);
-
-  useLayoutEffect(() => {
-    if (user) {
-      navigate(path);
-      resetPath();
-    }
-  }, []);
 
   useEffect(() => {
     return () => {
