@@ -42,4 +42,7 @@ function setAuthToken(res: Response<any, any>, payload: UserDoc) {
   );
 }
 
+type AuthCookie = { accessToken?: string; refreshToken?: string };
+
 export { setAuthToken };
+export type { AuthCookie };
