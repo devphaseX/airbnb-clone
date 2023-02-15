@@ -87,8 +87,8 @@
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--gray-1);
-  padding-block: 2px;
-  padding-inline: 12px 2px;
+  padding-block: 8px;
+  padding-inline: 24px 12px;
   border-radius: 50px;
   column-gap: 1rem;
 }
@@ -106,14 +106,26 @@
   position: relative;
 }
 
+.person {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: inherit;
+}
+
 .person-icon {
   font-size: 0;
+  cursor: pointer;
 }
 
 .person-icon svg {
   display: inline-block !important;
   width: 28px !important;
   height: 28px !important;
+}
+
+.person p {
+  margin-left: 4px;
 }
 
 .menu-list-wrapper {

@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import airbnbLogo from '../../assets/logo.svg';
 import './style.css';
 import { Menu } from '../../ui/icon/menu';
@@ -6,12 +6,16 @@ import { World } from '../../ui/icon/world';
 import { Person } from '../../ui/icon/person';
 import { MenuList } from '../../ui/menuList';
 import { useState } from 'react';
+import { useStore } from 'zustand';
+import { clientInfoStore } from '../../store/slice/user';
 
 const Header = () => {
   const [openMenuList, setOpenMenuList] = useState(false);
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const shouldOmitSearch = /^[/]?(?:login|signup)/.test(pathname);
+  const user = useStore(clientInfoStore, (state) => state.user);
+
   return (
     <header className="header">
       <div className="header-wrapper section-wrapper">
@@ -61,9 +65,13 @@ const Header = () => {
             >
               <Menu />
             </span>
-            <span className="person-icon">
-              <Person />
-            </span>
+            <Link to={user ? '/profile' : '/login'} className="person">
+              <span className="person-icon">
+                <Person />
+              </span>
+
+              {user ? <p>{`${user.firstName} ${user.lastName}`}</p> : null}
+            </Link>
           </span>
           <div
             className="menu-list-wrapper"

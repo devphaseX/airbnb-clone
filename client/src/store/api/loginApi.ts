@@ -9,6 +9,7 @@ const logUserApi = (cred: LoginCred, option?: ExtraOption) =>
       method: 'POST',
       headers: new Headers([['content-type', 'application/json']]),
       ...option,
+      credentials: 'include',
     })
   )();
 

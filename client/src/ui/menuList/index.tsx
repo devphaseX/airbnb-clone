@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
-
-import './style.css';
 import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
+import { logoutUserApi } from '../../store/api';
+import './style.css';
 
 type MenuListProps = { close: () => void };
 const MenuList = ({ close }: MenuListProps) => {
@@ -24,14 +24,19 @@ const MenuList = ({ close }: MenuListProps) => {
           <Link to="/login">Login</Link>
         </div>
       ) : (
-        <span
-          onClick={() => {
-            resetUser();
-            navigate('/login');
-          }}
-        >
-          logout
-        </span>
+        <div>
+          <span
+            onClick={async () => {
+              const response = await logoutUserApi();
+              if (response.ok && response.status === 204) {
+                resetUser();
+                navigate('/');
+              }
+            }}
+          >
+            logout
+          </span>
+        </div>
       )}
       <div>
         <Link to="#">Host your home</Link>
