@@ -6,13 +6,15 @@ import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
 import { authRoutePattern } from '../../util';
 import { preAuthPageStore } from '../../store/slice/resumePage';
+import { MenuInvisibleBackdrop } from '../../ui/menuList';
 
 const Layout = () => {
   const { pathname } = useLocation();
-  const shouldOmitFooter = /^[/]?(?:login|signup)/.test(pathname);
+  const shouldOmitFooter = !/^(\/|)$/.test(pathname);
   const user = useStore(clientInfoStore, (state) => state.user);
   const setPath = useStore(preAuthPageStore, (state) => state.setPath);
 
+  console.log(shouldOmitFooter);
   useLayoutEffect(() => {
     const matchAuthRoute = authRoutePattern.test(pathname);
     if (!matchAuthRoute) {
@@ -23,6 +25,9 @@ const Layout = () => {
   return (
     <div className="layout">
       <Header />
+      <>
+        <MenuInvisibleBackdrop />
+      </>
       <Outlet />
       {!shouldOmitFooter ? <Footer /> : null}
     </div>
