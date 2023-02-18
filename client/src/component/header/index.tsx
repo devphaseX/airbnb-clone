@@ -54,7 +54,7 @@ const Header = () => {
           </div>
         ) : null}
         <div className="product-action">
-          <span>Become a member</span>
+          <span>Become a Host</span>
           <span className="nav__icon">
             <World />
           </span>
@@ -65,7 +65,7 @@ const Header = () => {
             >
               <Menu />
             </span>
-            <Link to={user ? '/profile' : '/login'} className="person">
+            <Link to={user ? '/account' : '/login'} className="person">
               <span className="person-icon">
                 <Person />
               </span>
@@ -77,7 +77,10 @@ const Header = () => {
             className="menu-list-wrapper"
             style={{ display: openMenuList ? 'initial' : 'none' }}
           >
-            <MenuList close={() => setOpenMenuList(false)} />
+            <MenuList
+              open={openMenuList}
+              close={() => setOpenMenuList(false)}
+            />
           </div>
         </div>
       </div>

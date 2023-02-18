@@ -126,10 +126,15 @@
 
 .person p {
   margin-left: 4px;
+  font-size: 1.4rem;
 }
 
 .menu-list-wrapper {
   position: absolute;
   bottom: 0;
   transform: translateY(104%);
+  right: 0;
+  width: 100%;
+  max-width: 250px;
+  z-index: 70;
 }
