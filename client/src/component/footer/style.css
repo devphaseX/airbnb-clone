@@ -9,6 +9,7 @@
 .footer__collapse {
   padding: 2rem;
   border-top: 2px solid rgb(226, 226, 226);
+  background-color: #fff;
 }
 
 .footer__collapse-wrapper {
@@ -96,6 +97,15 @@
 
 .footer__copy {
   margin-right: var(--link-item-gap);
+}
+
+.cancel-button {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 30px;
+  top: 30px;
+  cursor: pointer;
 }
 
 .nav__expand-wrapper {

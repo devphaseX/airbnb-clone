@@ -4,6 +4,7 @@ import './style.css';
 import { mergeStyleClassName } from '../../util';
 import { expandedFooterLink } from './links';
 import { World } from '../../ui/icon/world';
+import cancelIcon from '../../assets/cancel.svg';
 
 const Footer = () => {
   const [collapse, setCollapse] = useState(true);
@@ -88,6 +89,9 @@ const FooterExpanded = ({ setCollapse, collapse }: FooterExpandedProps) => (
         collapse ? 'footer__expand--hide' : 'footer__expand--show',
       ])}
     >
+      <span className="cancel-button" onClick={() => setCollapse(true)}>
+        <img src={cancelIcon} alt="cancel icon button" />
+      </span>
       <div className="footer__expand-wrapper section-wrapper">
         <div className="nav__expand-wrapper">
           {Object.keys(expandedFooterLink).map((key, i) => (
