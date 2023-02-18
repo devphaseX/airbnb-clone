@@ -5,22 +5,54 @@ import {
 } from 'react-router-dom';
 import { Layout } from '../layout';
 
-import { ProtectedRoute } from '../layout/ProtectedRoute';
-import { Home, Authenicate, Profile, authAccessCheck } from '../../pages';
+import {
+  Home,
+  Authenicate,
+  Profile,
+  shouldBlockAuthAccess,
+  shouldGrantProtectAccess,
+  Account,
+  Booking,
+  Places,
+} from '../../pages';
+
+import { CreateNewAccomdation } from '../../component/place/create';
+import {
+  AccomodationForm,
+  createAccomodationAction,
+} from '../../component/place/form';
 
 const route: RouteObject = {
   element: <Layout />,
   children: [
     { path: '/', element: <Home /> },
-    { path: '/login', element: <Authenicate />, loader: authAccessCheck },
-    { path: '/signup', element: <Authenicate />, loader: authAccessCheck },
+    { path: '/login', element: <Authenicate />, loader: shouldBlockAuthAccess },
     {
-      path: '/profile',
-      element: (
-        <ProtectedRoute>
-          <Profile />
-        </ProtectedRoute>
-      ),
+      path: '/signup',
+      element: <Authenicate />,
+      loader: shouldBlockAuthAccess,
+    },
+    {
+      path: '/account',
+      element: <Account />,
+      loader: shouldGrantProtectAccess,
+      children: [
+        { index: true, element: <Profile /> },
+        { path: 'profile', element: <Profile /> },
+        { path: 'bookings', element: <Booking /> },
+        {
+          path: 'places',
+          element: <Places />,
+          children: [
+            { index: true, element: <CreateNewAccomdation /> },
+            {
+              path: 'new',
+              element: <AccomodationForm />,
+              action: createAccomodationAction,
+            },
+          ],
+        },
+      ],
     },
   ],
 };
