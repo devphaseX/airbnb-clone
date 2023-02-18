@@ -1,5 +1,10 @@
 import { useState, useId, useRef, useEffect } from 'react';
-import { redirect, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LoaderFunctionArgs,
+  redirect,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { createStore, useStore } from 'zustand';
 import '../style/login.css';
@@ -17,6 +22,7 @@ import {
   RegisterFormData,
 } from '../store/api/baseUrl';
 import { userSession } from '../component/layout/ReAuthUser';
+import backChevronIcon from '../assets/chevron.svg';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -75,9 +81,7 @@ const Authenicate = () => {
 
   useEffect(() => {
     const pathMatch = authRoutePattern.exec(pathname);
-    if (!pathMatch) {
-      return;
-    }
+    if (!pathMatch) return;
 
     let path = pathMatch[1];
     if (path === 'login' && authStep === 'register') {
@@ -102,6 +106,14 @@ const Authenicate = () => {
       <div className="auth-section-wrapper section-wrapper">
         <div className="auth-wrapper">
           <div className="auth-type">
+            {authStep !== 'verify' ? (
+              <span
+                className="back-button"
+                onClick={() => setAuthStep('verify')}
+              >
+                <img src={backChevronIcon} alt="back button" />
+              </span>
+            ) : null}
             <h4 className="auth-type__title">
               {authStep !== 'register'
                 ? 'Log in or sign up'
@@ -395,7 +407,7 @@ const ExternalAuth = ({ name, title, href, imgSrc }: ExternalAuthProp) => (
   </a>
 );
 
-async function authAccessCheck() {
+async function shouldBlockAuthAccess() {
   await userSession.getState().waitForLoadingDone();
   const user = clientInfoStore.getState().user;
   const { path, resetPath } = preAuthPageStore.getState();
@@ -407,5 +419,19 @@ async function authAccessCheck() {
   return null;
 }
 
-export { Authenicate, authAccessCheck };
+async function shouldGrantProtectAccess({ request }: LoaderFunctionArgs) {
+  const pathname = new URL(request.url).pathname;
+  await userSession.getState().waitForLoadingDone();
+  const user = clientInfoStore.getState().user;
+  const setResumePath = preAuthPageStore.getState().setPath;
+
+  if (!user) {
+    setResumePath(pathname);
+    return redirect('/login');
+  }
+
+  return null;
+}
+
+export { Authenicate, shouldBlockAuthAccess, shouldGrantProtectAccess };
 export type { RegisterFormData, LoginFormData };

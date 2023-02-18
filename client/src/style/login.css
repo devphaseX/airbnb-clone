@@ -21,10 +21,20 @@
   padding-block: 1.6rem;
   text-align: center;
   border-bottom: 1px solid #cccccc;
+  display: flex;
+  padding-inline: 3rem;
+  align-items: center;
+}
+
+.back-button {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
 }
 
 .auth-type__title {
   font-size: 1.4rem;
+  margin-inline: auto;
 }
 
 .form-wrapper {
