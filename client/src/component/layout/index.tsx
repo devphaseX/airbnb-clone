@@ -14,7 +14,6 @@ const Layout = () => {
   const user = useStore(clientInfoStore, (state) => state.user);
   const setPath = useStore(preAuthPageStore, (state) => state.setPath);
 
-  console.log(shouldOmitFooter);
   useLayoutEffect(() => {
     const matchAuthRoute = authRoutePattern.test(pathname);
     if (!matchAuthRoute) {

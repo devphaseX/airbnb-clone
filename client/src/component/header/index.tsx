@@ -65,7 +65,7 @@ const Header = () => {
             >
               <Menu />
             </span>
-            <Link to={user ? '/account' : '/login'} className="person">
+            <Link to={user ? '/account' : '/verify'} className="person">
               <span className="person-icon">
                 <Person />
               </span>
