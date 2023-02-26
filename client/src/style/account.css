@@ -1,0 +1,68 @@
+.account {
+  padding-block: 24px;
+}
+
+.account-wrapper {
+  text-align: center;
+}
+
+.account-detail-switch {
+  font-size: 1.6rem;
+  display: inline-flex;
+  column-gap: 1.6rem;
+  margin-inline: auto;
+}
+
+.account-detail-switch a {
+  font: inherit;
+}
+
+.switch-link {
+  color: black;
+  padding: 0.8rem 1.6rem;
+  border-radius: 20px;
+  background-color: #e2e2e2;
+  display: inline-flex;
+  align-items: center;
+  column-gap: 0.8rem;
+}
+
+.switch-link > span:first-child {
+  width: 18px;
+  height: 18px;
+}
+
+.switch-link > span:first-child svg {
+  font-weight: bold;
+}
+
+.switch-link > span {
+  display: inline-block;
+}
+
+.active-link {
+  background-color: var(--dls19-brand-color);
+  color: #fff;
+}
+
+.new-accomodation {
+  margin-top: 32px;
+}
+
+.add-new-button {
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+  border: none;
+  background-color: var(--dls19-brand-color);
+  font-size: 1.6rem;
+  padding: 1rem 2rem;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.add-button-icon {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
