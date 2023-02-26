@@ -8,6 +8,8 @@ const memoryStore = multer.memoryStorage();
 
 const loadImage = multer({ storage: memoryStore }).single('image');
 
+type CreateImagePayload = { id: string; filename: string; imgUrlPath: string };
+
 type CreateImageHandler = RequestHandler;
 const createImage: CreateImageHandler = async (req, res, next) => {
   try {
@@ -22,8 +24,9 @@ const createImage: CreateImageHandler = async (req, res, next) => {
     });
 
     return res.status(201).json({
-      url: image.filename,
-      path: `${req.protocol}://${req.headers.host}/${image.filename}`,
+      id: image.id,
+      filename: image.filename,
+      imgUrlPath: `${req.protocol}://${req.headers.host}/${image.filename}`,
     });
   } catch (e) {
     console.log(e);
@@ -55,4 +58,4 @@ const getImage: GetImageHandler = async (req, res, next) => {
     console.log(e);
   }
 };
-export { loadImage, createImage, getImage };
+export { loadImage, createImage, getImage, type CreateImagePayload };
