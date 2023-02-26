@@ -68,14 +68,12 @@ const Authenicate = () => {
     const path = authRoutePattern.exec(pathname)?.[1];
     if (!path) return;
 
-    if (authStep === 'register') {
+    if (authStep === 'register' && path !== 'signup') {
       navigate('/signup');
-    } else if (path === 'login' && authStep === 'verify') {
-      setAuthStep('verify');
-    } else if (path === 'signup' && authStep === 'password') {
+    } else if (authStep === 'password' && path === 'verify') {
       navigate('/login');
-    } else if (authStep === 'verify') {
-      navigate('/login');
+    } else if (authStep === 'verify' && path !== 'verify') {
+      navigate('/verify');
     }
   }, [authStep]);
 
@@ -84,16 +82,16 @@ const Authenicate = () => {
     if (!pathMatch) return;
 
     let path = pathMatch[1];
-    if (path === 'login' && authStep === 'register') {
+
+    if (
+      path === 'verify' &&
+      (authStep === 'register' || authStep === 'password')
+    ) {
       setAuthStep('verify');
-    }
-
-    if (path === 'signup' && email.trim()) {
+    } else if (path === 'signup' && email.trim()) {
       setAuthStep('register');
-    }
-
-    if (!email.trim() && path === 'signup') {
-      navigate('/login');
+    } else if (!email.trim() && path === 'signup') {
+      setAuthStep('verify');
     }
   }, [pathname]);
 
@@ -340,9 +338,7 @@ const Register = ({ setStep }: RegisterProps) => {
           label="email"
           labelClass="text__input-label"
           placeholder={email.toLowerCase() || 'Email'}
-          {...register('email')}
-          defaultValue={email || ''}
-          disabled={email !== ''}
+          {...register('email', { disabled: email !== '', value: email })}
         />
         <p>We'll email you tip confirmations and receipts.</p>
       </div>

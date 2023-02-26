@@ -26,6 +26,11 @@ const route: RouteObject = {
   element: <Layout />,
   children: [
     { path: '/', element: <Home /> },
+    {
+      path: '/verify',
+      element: <Authenicate />,
+      loader: shouldBlockAuthAccess,
+    },
     { path: '/login', element: <Authenicate />, loader: shouldBlockAuthAccess },
     {
       path: '/signup',
