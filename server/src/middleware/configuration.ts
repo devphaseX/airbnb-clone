@@ -25,9 +25,9 @@ function mountConfig(app: Express) {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: getEnv().NODE_ENV === 'production',
+        secure: true,
         sameSite: 'none',
-        httpOnly: true,
+        httpOnly: false,
         maxAge: 60 * 60 * 24 * 1000,
       },
     })
