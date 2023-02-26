@@ -6,7 +6,7 @@ import { encodePassword } from '../../controller/auth/encrypt';
 type UserCreateFormData = Omit<UserDoc, keyof SchemaTimestampsConfig> & {
   confirmPassword?: string;
 };
-type UserSchemaShape = TypedZodType<UserCreateFormData>;
+type UserSchemaShape = Expand<MapObjectIdString<UserCreateFormData>>;
 
 const userPasswordSchema = z
   .string()
@@ -22,7 +22,7 @@ const userCreateDocSchema = z
     email: z.string().email(),
     password: userPasswordSchema,
     confirmPassword: userPasswordSchema.optional(),
-  } satisfies UserSchemaShape)
+  } satisfies Record<keyof UserSchemaShape, any>)
   .refine(
     (record) =>
       typeof record.confirmPassword !== 'undefined'
@@ -39,12 +39,12 @@ const userCreateDocSchema = z
   }));
 
 type UserLoginFormData = Pick<UserCreateFormData, 'email' | 'password'>;
-type UserLoginSchemaFormShape = TypedZodType<UserLoginFormData>;
+type UserLoginSchemaFormShape = Expand<MapObjectIdString<UserLoginFormData>>;
 
 const userAuthDocSchema = z.object({
   email: z.string().trim().email(),
   password: userPasswordSchema.trim(),
-} satisfies UserLoginSchemaFormShape);
+} satisfies Record<keyof UserLoginSchemaFormShape, any>);
 
 export { userCreateDocSchema, userAuthDocSchema };
 export type { UserLoginFormData, UserCreateFormData };
