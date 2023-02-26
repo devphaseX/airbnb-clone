@@ -52,8 +52,8 @@ const MenuList = ({ close, open }: MenuListProps) => {
     >
       {!user ? (
         <div>
-          <Link to="/signup">Sign up</Link>
-          <Link to="/login">Login</Link>
+          <Link to="/verify">Sign up</Link>
+          <Link to="/verify">Login</Link>
         </div>
       ) : (
         <div>
