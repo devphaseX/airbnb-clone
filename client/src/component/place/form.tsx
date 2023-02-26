@@ -2,163 +2,121 @@ import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, useSubmit } from 'react-router-dom';
 import './style.css';
 import { useState } from 'react';
-import { sleep } from '../../util';
+import { inferImagename, inferUrlFileExt, sleep } from '../../util';
 import { fetchFn } from '../../store/api/baseUrl';
+import { uploadImage } from '../../store/api/uploadApi';
+import { useRef } from 'react';
+import { useEffect } from 'react';
+import {
+  DisplayImagePreview,
+  FetchImageComplete,
+  FetchImageProgress,
+  ImageUploadProgress,
+  createFetchImage,
+  createLoadedImage,
+  createUploadImage,
+  getUploadImagesUrl,
+  hasUploadImagesComplete,
+  progressFetchImageComplete,
+  progressFetchImageFailed,
+  progressImageUploadComplete,
+  progressImageUploadFailed,
+} from './preview';
+import type { RenderImage } from './preview';
+import { useNewPlaceMutation } from '../../store/api/place';
+import { PlaceDoc } from '../../../../server/src/model';
+import { SetStateAction } from 'react';
+import { Dispatch } from 'react';
+import { AxiosResponse } from 'axios';
+import { CreateImagePayload } from '../../../../server/src/controller/image/upload';
 
-interface RenderImageBase {
-  id: string;
-  type: string;
-  filename?: string;
-  status?: 'process' | 'failed' | 'complete';
+interface AccomodationFormData extends Omit<PlaceDoc, 'owner' | 'photos'> {
+  photo: string;
 }
 
-interface FetchImageBase extends RenderImageBase {
-  type: 'fetching';
-  href: string;
-  status: 'process' | 'failed' | 'complete';
+interface ClientAccomodationFormData
+  extends Omit<AccomodationFormData, 'photo'> {
+  photos: Array<CreateImagePayload>;
 }
 
-interface FetchImageProgress extends FetchImageBase {
-  status: 'process';
-}
+type SetStageImageFn = Dispatch<
+  Exclude<SetStateAction<Array<RenderImage>>, Array<RenderImage>>
+>;
 
-interface FetchImageFail extends FetchImageBase {
-  status: 'failed';
-}
-
-interface FetchImageComplete extends FetchImageBase {
-  status: 'complete';
-  data: File | Blob;
-}
-
-type FetchImage = FetchImageProgress | FetchImageFail | FetchImageComplete;
-
-interface LoadedImage extends RenderImageBase {
-  type: 'loaded';
-  data: File | Blob;
-  filename: string;
-}
-
-interface UploadImageBase extends RenderImageBase {
-  type: 'uploaded';
-  filename: string;
-}
-
-interface ImageUploadProgress extends UploadImageBase {
-  data: Blob | File;
-  status: 'process';
-}
-
-interface ImageUploadFail extends UploadImageBase {
-  data: Blob | File;
-  status: 'failed';
-}
-
-interface ImageUploadComplete extends UploadImageBase {
-  url: string;
-  status: 'complete';
-}
-
-type UploadedImage =
-  | ImageUploadProgress
-  | ImageUploadFail
-  | ImageUploadComplete;
-
-type RenderImage = FetchImage | LoadedImage | UploadedImage;
-
-const genNaiveRandomId = () => Math.random().toString(32).slice(2);
-
-const createLoadedImage = (file: File, id?: string): LoadedImage => ({
-  id: id ?? genNaiveRandomId(),
-  type: 'loaded',
-  filename: file.name,
-  data: file,
-});
-
-const createFetchImage = (href: string): FetchImage => ({
-  id: genNaiveRandomId(),
-  type: 'fetching',
-  status: 'process',
-  href,
-});
-
-const createUploadImage = (
-  id: string,
-  file: File | Blob,
-  filename: string
-): ImageUploadProgress => ({
-  id,
-  type: 'uploaded',
-  status: 'process',
-  filename,
-  data: file,
-});
-
-const resolveImageLink = (
-  image: UploadedImage | LoadedImage | FetchImageComplete
-) =>
-  image.type === 'fetching' ||
-  image.type === 'loaded' ||
-  (image.type === 'uploaded' &&
-    (image.status === 'process' || image.status === 'failed'))
-    ? URL.createObjectURL(image.data)
-    : image.url;
-
-const canRenderImagePreview = (
-  image: RenderImage
-): image is LoadedImage | FetchImageComplete | UploadedImage =>
-  image.type === 'loaded' ||
-  (image.type === 'fetching' && image.status === 'complete') ||
-  image.type === 'uploaded';
-
-const progressFetchImageComplete = (
-  stage: FetchImageProgress,
-  data: FetchImageComplete['data']
-): FetchImageComplete => ({ ...stage, status: 'complete', data });
-
-const progressFetchImageFailed = (
-  stage: FetchImageProgress
-): FetchImageFail => ({ ...stage, status: 'failed' });
-
-const progressImageUploadComplete = (
-  stage: ImageUploadProgress,
-  url: string
-): ImageUploadComplete => ({
-  id: stage.id,
-  type: stage.type,
-  status: 'complete',
-  filename: stage.filename,
-  url,
-});
-
-const progressImageUploadFailed = (
-  stage: ImageUploadProgress
-): ImageUploadFail => ({ ...stage, status: 'failed' });
-
-const imageEligibleForSubmit = (images: Array<RenderImage>) =>
-  images.every(({ type }) => type === 'uploaded');
-
-interface AccomodationFormData {
-  title: string;
-  address: string;
-  imageLink: string;
-  perks: string;
-}
+const updateImageProgress =
+  (setStageImage: SetStageImageFn) =>
+  (stageId: string, updateStage: (stage: RenderImage) => RenderImage) => {
+    setStageImage((prev) =>
+      prev.map((render) =>
+        render.id === stageId ? updateStage(render) : render
+      )
+    );
+  };
 
 const AccomodationForm = () => {
-  const { register, handleSubmit, getValues } = useForm<AccomodationFormData>(
-    {}
-  );
+  const { register, handleSubmit, getValues, resetField } =
+    useForm<AccomodationFormData>();
   const submitForm = useSubmit();
-  const [images, setImages] = useState<Array<RenderImage>>([]);
+  const [stageImages, setStageImages] = useState<Array<RenderImage>>([]);
+  const imageRef = useRef<{ [blobImgId: string]: string }>({});
+  const updateStageImage = updateImageProgress(setStageImages);
+  const post = useNewPlaceMutation();
+  const abort = useRef(new AbortController()).current;
+
+  const resolveImageLink = (stage: RenderImage, id: string) => {
+    if (
+      (stage.type === 'fetching' && stage.status == 'complete') ||
+      stage.type === 'loaded' ||
+      stage.type === 'uploaded'
+    ) {
+      const url = URL.createObjectURL(stage.data);
+      if (imageRef.current[id]) {
+        URL.revokeObjectURL(imageRef.current[id]);
+      }
+      imageRef.current[id] = url;
+      return url;
+    }
+
+    return undefined;
+  };
+
+  useEffect(() => {
+    () => {
+      Object.values(imageRef.current).forEach((imgBlobUrl) => {
+        URL.revokeObjectURL(imgBlobUrl);
+      });
+
+      imageRef.current = {};
+
+      abort.abort();
+    };
+  }, []);
 
   return (
     <div className="accomodation">
       <form
         className="accomodation-form"
-        onSubmit={handleSubmit(() => {
-          const imageStatus = imageEligibleForSubmit(images);
-          if (imageStatus) {
+        onSubmit={handleSubmit(async () => {
+          const finishUploading = hasUploadImagesComplete(stageImages);
+          if (!finishUploading) {
+            //warn user about trying to submit the form
+            //before completing image upload
+          } else {
+            const { photo: _, ...data } = getValues();
+            const formData = {
+              ...data,
+              photos: getUploadImagesUrl(stageImages).filter(Boolean),
+            } as ClientAccomodationFormData;
+            console.log(formData);
+
+            await fetchFn((b) =>
+              fetch(`${b}/place/create`, {
+                method: 'POST',
+                body: JSON.stringify(formData),
+                headers: { 'content-type': 'application/json' },
+                credentials: 'include',
+              })
+            )();
           }
         })}
       >
@@ -170,13 +128,17 @@ const AccomodationForm = () => {
           <input
             type="text"
             placeholder="title, for example: My love"
-            {...register('title')}
+            {...register('title', { required: true })}
           />
         </div>
         <div className="accomodation-input__wrapper">
           <label className="accomodation__input-label">Address</label>
           <p>Address to your place</p>
-          <input type="text" placeholder="address" {...register('address')} />
+          <input
+            type="text"
+            placeholder="address"
+            {...register('address', { required: true })}
+          />
         </div>
 
         <div className="accomodation-input__wrapper">
@@ -187,50 +149,44 @@ const AccomodationForm = () => {
             <input
               type="text"
               placeholder="Add using a link...jpg"
-              {...register('imageLink')}
+              {...register('photo')}
             />
             <button
               onClick={async () => {
-                const imageLink = getValues().imageLink;
+                const imageLink = getValues().photo;
                 if (!imageLink) return;
                 const fetchImage = createFetchImage(imageLink);
-                setImages((prev) => [...prev, fetchImage]);
+                const stageImageId = fetchImage.id;
+                setStageImages((prev) => [...prev, fetchImage]);
                 await sleep(500);
                 const validFetchResponse = await fetch(imageLink);
-                const imageBlob = await validFetchResponse.blob();
+                const imageFilenameFromUrl = inferImagename(imageLink);
+
+                const namedImageFile = new File(
+                  [await validFetchResponse.blob()],
+                  imageFilenameFromUrl,
+                  {
+                    type: `image/${inferUrlFileExt(imageFilenameFromUrl)}`,
+                  }
+                );
+
                 if (validFetchResponse.ok) {
-                  setImages((prev) =>
-                    prev.map((render) =>
-                      render.id === fetchImage.id
-                        ? progressFetchImageComplete(
-                            render as FetchImageProgress,
-                            imageBlob
-                          )
-                        : render
+                  updateStageImage(stageImageId, (render) =>
+                    progressFetchImageComplete(
+                      render as FetchImageProgress,
+                      namedImageFile
                     )
                   );
 
                   await sleep(1500);
                   const formData = new FormData();
-                  formData.set('image', imageBlob);
-                  const imageFilenameFromUrl = imageLink.split('/').pop()!;
-                  setImages((prev) =>
-                    prev.map((render) =>
-                      render.id === fetchImage.id
-                        ? createUploadImage(
-                            (render as FetchImageComplete).id,
-                            new File(
-                              [(render as FetchImageComplete).data],
-                              imageFilenameFromUrl,
-                              {
-                                type: validFetchResponse.headers.get(
-                                  'content-type'
-                                )!,
-                              }
-                            ),
-                            imageFilenameFromUrl
-                          )
-                        : render
+                  formData.set('image', namedImageFile);
+
+                  updateStageImage(stageImageId, (render) =>
+                    createUploadImage(
+                      (render as FetchImageComplete).id,
+                      (render as FetchImageComplete).data,
+                      imageFilenameFromUrl
                     )
                   );
 
@@ -241,39 +197,26 @@ const AccomodationForm = () => {
                     })
                   )();
 
-                  await sleep(500);
+                  await sleep(1000);
                   if (uploadRes.ok) {
                     const data = await uploadRes.json();
-                    setImages((prev) =>
-                      prev.map((render) =>
-                        render.id === fetchImage.id &&
-                        render.type === 'uploaded'
-                          ? progressImageUploadComplete(
-                              render as ImageUploadProgress,
-                              data.path
-                            )
-                          : render
+
+                    updateStageImage(stageImageId, (render) =>
+                      progressImageUploadComplete(
+                        render as ImageUploadProgress,
+                        data
                       )
                     );
+
+                    resetField('photo');
                   } else {
-                    setImages((prev) =>
-                      prev.map((render) =>
-                        render.id === fetchImage.id &&
-                        render.type === 'uploaded'
-                          ? progressImageUploadFailed(
-                              render as ImageUploadProgress
-                            )
-                          : render
-                      )
+                    updateStageImage(stageImageId, (render) =>
+                      progressImageUploadFailed(render as ImageUploadProgress)
                     );
                   }
                 } else {
-                  setImages((prev) =>
-                    prev.map((render) =>
-                      render.id === fetchImage.id
-                        ? progressFetchImageFailed(render as FetchImageProgress)
-                        : render
-                    )
+                  updateStageImage(stageImageId, (render) =>
+                    progressFetchImageFailed(render as FetchImageProgress)
                   );
                 }
               }}
@@ -292,59 +235,52 @@ const AccomodationForm = () => {
                 if (!file) return;
 
                 const loadedImage = createLoadedImage(file);
-                setImages((prev) => [...prev, loadedImage]);
+                const stageImageId = loadedImage.id;
+                setStageImages((prev) => [...prev, loadedImage]);
                 const formData = new FormData();
                 formData.set('image', file);
 
                 await sleep(1500);
-                setImages((prev) =>
-                  prev.map((render) =>
-                    render === loadedImage
-                      ? createUploadImage(loadedImage.id, file, file.name)
-                      : render
-                  )
+                updateStageImage(stageImageId, () =>
+                  createUploadImage(loadedImage.id, file, file.name)
                 );
 
-                const uploadResponse = await fetchFn((baseUrl) =>
-                  fetch(`${baseUrl}/upload`, {
-                    method: 'POST',
-                    body: formData,
-                  })
-                )();
+                const uploadResponse = (await uploadImage(
+                  formData,
+                  abort.signal,
+                  ({ progress }) => {
+                    updateStageImage(
+                      stageImageId,
+                      (render) =>
+                        ({ ...render, progress } as ImageUploadProgress)
+                    );
+                  }
+                )) as Response & AxiosResponse;
 
-                await sleep(500);
-                if (uploadResponse.ok) {
-                  const data = await uploadResponse.json();
-                  setImages((prev) =>
-                    prev.map((render) =>
-                      render.id === loadedImage.id
-                        ? progressImageUploadComplete(
-                            render as ImageUploadProgress,
-                            data.path
-                          )
-                        : render
+                await sleep(100);
+                if (uploadResponse.ok || uploadResponse.data) {
+                  const data =
+                    uploadResponse.data ?? (await uploadResponse.json());
+                  updateStageImage(stageImageId, (render) =>
+                    progressImageUploadComplete(
+                      render as ImageUploadProgress,
+                      data
                     )
                   );
                 } else {
-                  setImages((prev) =>
-                    prev.map((render) =>
-                      render.id === loadedImage.id
-                        ? progressImageUploadFailed(
-                            render as ImageUploadProgress
-                          )
-                        : render
-                    )
+                  updateStageImage(stageImageId, (render) =>
+                    progressImageUploadFailed(render as ImageUploadProgress)
                   );
                 }
               }}
             />
             <div className="image-box">
-              {images.map((render) => (
-                <div key={render.id} className="preview-image">
-                  {canRenderImagePreview(render) ? (
-                    <img src={resolveImageLink(render)} alt={render.filename} />
-                  ) : null}
-                </div>
+              {stageImages.map((staged) => (
+                <DisplayImagePreview
+                  staged={staged}
+                  resolveImageLink={resolveImageLink}
+                  key={staged.id}
+                />
               ))}
               <button>
                 <label htmlFor="upload-file">Upload</label>
@@ -356,12 +292,12 @@ const AccomodationForm = () => {
         <div className="accomodation-input__wrapper">
           <label className="accomodation__input-label">Description</label>
           <p>description of the place</p>
-          <textarea rows={7} />
+          <textarea rows={7} {...register('description', { required: true })} />
         </div>
 
         <div className="accomodation-input__wrapper">
-          <label className="accomodation__input-label">Pecks</label>
-          <p>select all pecks of your places</p>
+          <label className="accomodation__input-label">Perks</label>
+          <p>select all perks of your places</p>
           <div className="features">
             <div>
               <label htmlFor="wifi">
@@ -530,7 +466,7 @@ const AccomodationForm = () => {
         <div className="accomodation-input__wrapper extra-info__wrapper">
           <label className="accomodation__input-label">Extra Info</label>
           <p>house rule, etc</p>
-          <textarea rows={7} />
+          <textarea rows={7} {...register('extraInfo', { required: true })} />
         </div>
 
         <div className="accomodation-input__wrapper check-in-out-wrapper">
@@ -543,15 +479,15 @@ const AccomodationForm = () => {
             <div className="check-in-out-input-box">
               <div>
                 <label>Check in time</label>
-                <input type="text" placeholder="14:00" />
+                <input type="number" {...register('checkout')} />
               </div>
               <div>
                 <label>Check out time</label>
-                <input type="text" />
+                <input type="number" {...register('checkin')} />
               </div>
               <div>
                 <label>Max No of guests</label>
-                <input type="number" />
+                <input type="number" {...register('maxGuests')} />
               </div>
             </div>
           </fieldset>
@@ -567,3 +503,4 @@ const AccomodationForm = () => {
 async function createAccomodationAction({}: ActionFunctionArgs) {}
 
 export { AccomodationForm, createAccomodationAction };
+export type { AccomodationFormData };
