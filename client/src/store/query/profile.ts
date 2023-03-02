@@ -3,9 +3,9 @@ import { fetchFn } from '../api/baseUrl';
 import { UserDoc } from '../../../../server/src/model';
 
 const useProfile = () =>
-  useQuery(
-    ['profile'],
-    async (context) => {
+  useQuery({
+    queryKey: ['profile'],
+    queryFn: async (context) => {
       const response = await fetchFn((baseUrl) =>
         fetch(`${baseUrl}/auth/profile`, {
           credentials: 'include',
@@ -19,7 +19,7 @@ const useProfile = () =>
         throw await response.json();
       }
     },
-    { retry: false }
-  );
+    retry: false,
+  });
 
 export { useProfile };
