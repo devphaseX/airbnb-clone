@@ -3,35 +3,37 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import helmet from 'helmet';
-import session from 'express-session';
-import createDBStore from 'connect-mongodb-session';
+// import session from 'express-session';
+// import createDBStore from 'connect-mongodb-session';
 import { getEnv } from '../server/config/env';
 
-const MongoDBStore = createDBStore(session);
+// const MongoDBStore = createDBStore(session);
 
-const store = new MongoDBStore({
-  uri: getEnv().DATABASE_URL,
-  databaseName: 'airbnb-clone',
-  collection: 'session',
-  expiresAfterSeconds: 60 * 60 * 24,
-});
+// const store = new MongoDBStore({
+//   uri: getEnv().DATABASE_URL,
+//   databaseName: 'airbnb-clone',
+//   collection: 'session',
+//   expiresAfterSeconds: 60 * 60 * 24,
+// });
 
 function mountConfig(app: Express) {
-  app.use(
-    session({
-      store,
-      name: 'userId',
-      secret: 'dont even try to suggest',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: true,
-        sameSite: 'none',
-        httpOnly: false,
-        maxAge: 60 * 60 * 24 * 1000,
-      },
-    })
-  );
+  // app.use(
+  //   session({
+  //     store,
+  //     name: 'userId',
+  //     secret: 'dont even try to suggest',
+  //     resave: true,
+  //     saveUninitialized: true,
+  //     cookie: {
+  //       get secure() {
+  //         return true;
+  //       },
+  //       sameSite: 'none',
+  //       // httpOnly: true,
+  //       maxAge: 60 * 60 * 24 * 1000,
+  //     },
+  //   })
+  // );
 
   app.use(express.json());
   app.use(cookieParser());
