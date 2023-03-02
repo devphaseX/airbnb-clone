@@ -15,7 +15,6 @@ const Header = () => {
   const navigate = useNavigate();
   const shouldOmitSearch = /^[/]?(?:login|signup)/.test(pathname);
   const user = useStore(clientInfoStore, (state) => state.user);
-
   return (
     <header className="header">
       <div className="header-wrapper section-wrapper">
