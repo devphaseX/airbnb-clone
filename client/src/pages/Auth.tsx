@@ -56,6 +56,7 @@ const Authenicate = () => {
 
   useEffect(() => {
     return () => {
+      //prevent entrant to already navigated page
       resetPath();
       resetEmail();
     };
@@ -68,10 +69,13 @@ const Authenicate = () => {
     const path = authRoutePattern.exec(pathname)?.[1];
     if (!path) return;
 
+    //reflect the path to signup when the register component is displayed.
     if (authStep === 'register' && path !== 'signup') {
       navigate('/signup');
+      //reflect the path to login when user is verified to have opened an account.
     } else if (authStep === 'password' && path === 'verify') {
       navigate('/login');
+      //revert an change in route if user is currently viewing the verify page and route does not match
     } else if (authStep === 'verify' && path !== 'verify') {
       navigate('/verify');
     }
@@ -83,13 +87,17 @@ const Authenicate = () => {
 
     let path = pathMatch[1];
 
+    //sync the path which the component displayed
+    //when path changed to verify, auto changed dispay component to verify component
     if (
       path === 'verify' &&
       (authStep === 'register' || authStep === 'password')
     ) {
       setAuthStep('verify');
+      //only navigate user to signup if there is a provided email and it isn't mark as registered
     } else if (path === 'signup' && email.trim()) {
       setAuthStep('register');
+      //only navigate user to login if the verification report true for registered account
     } else if (!email.trim() && path === 'signup') {
       setAuthStep('verify');
     }

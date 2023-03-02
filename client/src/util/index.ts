@@ -23,6 +23,10 @@ const inferImagename = (url: string) => {
 
 const inferUrlFileExt = (url: string) => inferImagename(url).split('.').pop()!;
 
+const getItemId = <IdenifiableItem extends { _id?: string; id: string }>(
+  data: IdenifiableItem
+) => data._id ?? data.id;
+
 export {
   mergeStyleClassName,
   authRoutePattern,
@@ -30,4 +34,5 @@ export {
   inferFilenameFromUrl,
   inferImagename,
   inferUrlFileExt,
+  getItemId,
 };
