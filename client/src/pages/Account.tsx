@@ -8,6 +8,7 @@ import '../style/account.css';
 
 const takeLessTwoPathSegment = /^.+?(?:\/?$|[/].+?(?:\/|$))/;
 
+type AccountOutletContext = { beforeNowPath: string; basePath: string };
 const Account = () => {
   let { pathname } = useLocation();
   pathname = pathname.replace(/^[/]|[/]$/, '');
@@ -69,9 +70,11 @@ const Account = () => {
             <span>My Accomodation</span>
           </Link>
         </div>
-        <Outlet />
+
+        <Outlet context={{ beforeNowPath: currentPath, basePath }} />
       </div>
     </section>
   );
 };
 export { Account };
+export type { AccountOutletContext };

@@ -16,11 +16,9 @@ import {
   Places,
 } from '../../pages';
 
-import { CreateNewAccomdation } from '../../component/place/create';
-import {
-  AccomodationForm,
-  createAccomodationAction,
-} from '../../component/place/form';
+import { UserAccomodation } from '../place/accomodation';
+import { AccomodationForm } from '../../component/place/form';
+import { userAccomodationLoader } from '../place/showUserAccomodation';
 
 const route: RouteObject = {
   element: <Layout />,
@@ -49,11 +47,17 @@ const route: RouteObject = {
           path: 'places',
           element: <Places />,
           children: [
-            { index: true, element: <CreateNewAccomdation /> },
+            { index: true, element: <UserAccomodation /> },
+
             {
               path: 'new',
               element: <AccomodationForm />,
-              action: createAccomodationAction,
+            },
+
+            {
+              path: ':placeId',
+              element: <AccomodationForm />,
+              loader: userAccomodationLoader,
             },
           ],
         },

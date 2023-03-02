@@ -60,7 +60,7 @@ const MenuList = ({ close, open }: MenuListProps) => {
           <span
             onClick={async () => {
               const response = await logoutUserApi();
-              if (response.ok && response.status === 204) {
+              if (response.ok) {
                 resetUser();
                 navigate('/');
               }
