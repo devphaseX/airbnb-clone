@@ -11,7 +11,7 @@ import {
 
 const userRouter = express.Router();
 
-userRouter.get('/auth/refresh', refreshToken);
+userRouter.get('/refresh', refreshToken);
 userRouter.get(
   '/profile',
   protectedAuthRoute({ skipResponse: true }),
