@@ -1,17 +1,16 @@
 import { RequestHandler } from 'express';
+import {
+  ACCESS_TOKEN_NAME,
+  REFRESH_TOKEN_NAME,
+  createCookieConfig,
+} from '../../server/app/token';
 
 type LogoutUser = RequestHandler;
-const logout: LogoutUser = async (req, res) => {
+const logout: LogoutUser = async (_, res) => {
   try {
-    console.log(req.session, req.cookies);
-
-    req.session.destroy((err) => {
-      console.log('destroy session');
-      if (!err) {
-        res.clearCookie('userId');
-        res.status(204).send('ok');
-      }
-    });
+    res.clearCookie(ACCESS_TOKEN_NAME, createCookieConfig());
+    res.clearCookie(REFRESH_TOKEN_NAME, createCookieConfig());
+    return res.status(200).send('Done');
   } catch (e) {}
 };
 
