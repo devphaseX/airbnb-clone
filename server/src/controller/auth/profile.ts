@@ -1,28 +1,17 @@
 import { RequestHandler } from 'express';
-import { User } from '../../model';
 type ProfileHandler = RequestHandler;
 
 const getProfile: ProfileHandler = async (req, res) => {
   try {
-    const userCookieToken = (req.session as Partial<Record<string, any>>)
-      ?.user as null | {
-      _id: string;
-      email: string;
-    };
-    if (userCookieToken) {
-      const user = await User.findOne({ _id: userCookieToken._id }).select(
-        '-password'
-      );
-      if (user) {
-        return res.status(201).json(user);
-      }
+    const user = req.user;
+
+    if (!user) {
       return res.status(404).send('not found');
-    } else {
-      res.status(404).send('not found');
     }
+
+    res.status(200).json(user);
   } catch (e) {
-    console.log(e);
-    return res.status(404).send('something went wrong');
+    return res.status(500).send('something went wrong');
   }
 };
 
