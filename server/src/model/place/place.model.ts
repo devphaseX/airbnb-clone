@@ -4,6 +4,7 @@ import { Image } from '../image/image.model';
 
 const PlaceSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: User },
+  photoTag: { type: mongoose.Schema.Types.ObjectId, ref: Image },
   title: String,
   address: String,
   photos: [{ type: mongoose.Schema.Types.ObjectId, ref: Image }],
