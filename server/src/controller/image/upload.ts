@@ -18,16 +18,15 @@ const createImage: CreateImageHandler = async (req, res, next) => {
 
     const splitFileName = file.originalname.split('.');
     splitFileName.splice(-1, 0, new Date().toISOString());
+    const filename = splitFileName.join('.');
     const image = await Image.create({
-      filename: splitFileName.join('.'),
+      filename,
       data: { binary: file.buffer, contentType: file.mimetype },
+      imgUrlPath: `${req.protocol}://${req.headers.host}/${filename}`,
     });
 
-    return res.status(201).json({
-      id: image.id,
-      filename: image.filename,
-      imgUrlPath: `${req.protocol}://${req.headers.host}/${image.filename}`,
-    });
+    const { data: _, ...clientData } = image.toObject();
+    return res.status(201).json({ id: clientData._id, ...clientData });
   } catch (e) {
     console.log(e);
   }
