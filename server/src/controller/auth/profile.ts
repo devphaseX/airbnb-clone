@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 type ProfileHandler = RequestHandler;
 
-const getProfile: ProfileHandler = async (req, res) => {
+const getProfile: ProfileHandler = async (req, res, next) => {
   try {
     const user = req.user;
 
@@ -11,7 +11,7 @@ const getProfile: ProfileHandler = async (req, res) => {
 
     res.status(200).json(user);
   } catch (e) {
-    return res.status(500).send('something went wrong');
+    next(e);
   }
 };
 

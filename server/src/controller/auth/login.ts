@@ -5,7 +5,7 @@ import { setAuthToken } from '../../server/app/token';
 
 type SignInHandler = RequestHandler<any, any, UserLoginFormData>;
 
-const signIn: SignInHandler = async (req, res) => {
+const signIn: SignInHandler = async (req, res, next) => {
   try {
     const authData = userAuthDocSchema.parse(req.body);
     const user = await User.findOne({ email: authData.email });
@@ -22,7 +22,7 @@ const signIn: SignInHandler = async (req, res) => {
     setAuthToken(res, user);
     return res.status(200).json({ data: user });
   } catch (e) {
-    return res.status(500).json({ message: 'Internal server error' });
+    next(e);
   }
 };
 export { signIn };

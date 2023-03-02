@@ -19,8 +19,6 @@ declare global {
   }
 }
 
-type EnvSchema = TypedZodType<ApplicationEnv>;
-
 const envSchema = z.object({
   DATABASE_URL: z.string(),
   NODE_ENV: z.enum(['production', 'development'] as [
@@ -29,7 +27,7 @@ const envSchema = z.object({
   ]),
   SERVER_PORT: z.number({ coerce: true }),
   SALT_ROUND: z.number({ coerce: true }),
-} satisfies EnvSchema);
+} satisfies Record<keyof ApplicationEnv, any>);
 
 const env = envSchema.parse(process.env);
 const getEnv = (): ApplicationEnv => env as ApplicationEnv;

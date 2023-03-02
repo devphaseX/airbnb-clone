@@ -28,7 +28,7 @@ const createImage: CreateImageHandler = async (req, res, next) => {
     const { data: _, ...clientData } = image.toObject();
     return res.status(201).json({ id: clientData._id, ...clientData });
   } catch (e) {
-    console.log(e);
+    next(e);
   }
 };
 
@@ -54,7 +54,7 @@ const getImage: GetImageHandler = async (req, res, next) => {
       return res.send('failed');
     }
   } catch (e) {
-    console.log(e);
+    next(e);
   }
 };
 export { loadImage, createImage, getImage, type CreateImagePayload };

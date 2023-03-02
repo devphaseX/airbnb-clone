@@ -10,8 +10,8 @@ const useCreatePlace = () =>
       fetchFn((baseUrl) =>
         fetch(
           getItemId(data as any)
-            ? `${baseUrl}/place/${getItemId(data as any)}`
-            : `${baseUrl}/place/create`,
+            ? `${baseUrl}/place/user/${getItemId(data as any)}`
+            : `${baseUrl}/place/user/create`,
           {
             credentials: 'include',
             body: JSON.stringify(data),

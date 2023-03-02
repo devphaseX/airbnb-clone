@@ -3,7 +3,7 @@ import { getUserAuthStatus } from './verify';
 import { REFRESH_TOKEN_NAME, setAuthToken } from '../../server/app/token';
 type RefreshTokenHandler = RequestHandler;
 
-const refreshToken: RefreshTokenHandler = async (req, res) => {
+const refreshToken: RefreshTokenHandler = async (req, res, next) => {
   try {
     const token = req.cookies[REFRESH_TOKEN_NAME];
     const authTokenStatus = await getUserAuthStatus(token);
@@ -33,7 +33,7 @@ const refreshToken: RefreshTokenHandler = async (req, res) => {
         .json({ message: 'Access token refresh successfull' });
     }
   } catch (e) {
-    return res.status(500).json({ message: 'Internal server error' });
+    next(e);
   }
 };
 

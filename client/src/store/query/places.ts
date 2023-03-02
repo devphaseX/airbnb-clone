@@ -6,7 +6,7 @@ const usePlacesQuery = () =>
   useQuery({
     queryFn: (context) =>
       fetchFn((baseUrl) =>
-        fetch(`${baseUrl}/place`, { credentials: 'include' })
+        fetch(`${baseUrl}/place/user/`, { credentials: 'include' })
       )(context).then<Array<ServerAccomodationData>>((response) => {
         if (response.ok) {
           return response.json();

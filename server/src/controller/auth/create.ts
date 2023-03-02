@@ -3,7 +3,7 @@ import { User, UserCreateFormData, userCreateDocSchema } from '../../model';
 
 type CreateUserHandler = RequestHandler<any, any, Required<UserCreateFormData>>;
 
-const createUser: CreateUserHandler = async (req, res) => {
+const createUser: CreateUserHandler = async (req, res, next) => {
   try {
     const data = await userCreateDocSchema.parseAsync(req.body);
     if (await User.findOne({ email: data.email })) {
@@ -14,7 +14,7 @@ const createUser: CreateUserHandler = async (req, res) => {
     user.password = undefined;
     return res.status(200).send();
   } catch (e) {
-    console.log(e);
+    next(e);
   }
 };
 

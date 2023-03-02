@@ -5,6 +5,7 @@ import {
   PlaceSchemaShapeMapStringId,
 } from '../../model/place';
 import { Image, ImageDoc } from '../../model';
+import { getEnv } from '../../server';
 
 type CreateAccomodationHandler = RequestHandler<
   any,
@@ -38,7 +39,10 @@ const createAccomodation: CreateAccomodationHandler = async (req, res) => {
 
     return res.status(201).json(place);
   } catch (e) {
-    console.log(e);
+    return res.status(500).json({
+      message: 'Internal server error',
+      ...(getEnv().NODE_ENV === 'development' && { error: e }),
+    });
   }
 };
 
@@ -47,12 +51,11 @@ type UpdatePlaceFormData = typeof placeCreateDocSchema._output & {
   _id: string;
 };
 
-type UpdatePlaceHandler = RequestHandler<any, any, UpdatePlaceFormData>;
+type UpdateUserPlaceHandler = RequestHandler<any, any, UpdatePlaceFormData>;
 type ImageServerInfo = { id: string; filename: string; imgUrlPath: string };
 
-const updatePlace: UpdatePlaceHandler = async (req, res) => {
+const updateUserPlace: UpdateUserPlaceHandler = async (req, res, next) => {
   try {
-    console.log(req.body);
     const placeFormData = (await placeCreateDocSchema.parseAsync({
       ...req.body,
       id: req.body._id ?? req.body.id,
@@ -104,8 +107,15 @@ const updatePlace: UpdatePlaceHandler = async (req, res) => {
       })
     );
 
+    await Promise.all(
+      Array.from(deletedPhotos, async ([id]) => {
+        const image = await Image.findById(id);
+        if (!image) return;
+        await image.remove();
+      })
+    );
+
     const { photos: _, ...restData } = placeFormData;
-    await place.remove();
 
     const updatePlace = await Place.create({
       ...restData,
@@ -113,24 +123,30 @@ const updatePlace: UpdatePlaceHandler = async (req, res) => {
       owner: req.user!._id,
     });
 
+    await place.remove();
+
     return res
       .status(203)
-      .json((await updatePlace.populate('photos')).toObject());
+      .json(
+        (
+          await updatePlace.populate('photos', '_id filename imgUrlPath')
+        ).toObject()
+      );
   } catch (e) {
-    console.log(e);
+    next(e);
   }
 };
 
 type GetPlacesHandler = RequestHandler;
 
-const getPlaces: GetPlacesHandler = async (req, res) => {
+const getUserPlaces: GetPlacesHandler = async (req, res, next) => {
   try {
     const places = await Place.find({
       owner: req.user._id! || req.user.id!,
     }).populate('photos', 'id filename imgUrlPath');
     return res.status(200).json(places);
   } catch (e) {
-    return res.status(500).json({ message: 'Internal server error' });
+    next(e);
   }
 };
 
@@ -139,9 +155,10 @@ interface GetPlaceQuery extends qs.ParsedQs {
 }
 type GetPlaceHandler = RequestHandler<GetPlaceQuery>;
 
-const getPlace: GetPlaceHandler = async (req, res) => {
+const getUserPlace: GetPlaceHandler = async (req, res, next) => {
   try {
     const { placeId } = req.params;
+    console.log({ placeId });
     const place = await Place.findOne({ id: placeId }).populate(
       'photos',
       'id filename imgUrlPath'
@@ -154,8 +171,8 @@ const getPlace: GetPlaceHandler = async (req, res) => {
       .status(404)
       .json({ message: 'place with such id does not exist' });
   } catch (e) {
-    res.status(500).json({ message: 'Internal server error' });
+    next(e);
   }
 };
 
-export { createAccomodation, getPlaces, getPlace, updatePlace };
+export { createAccomodation, getUserPlaces, getUserPlace, updateUserPlace };

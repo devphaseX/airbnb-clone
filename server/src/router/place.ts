@@ -1,18 +1,21 @@
 import express from 'express';
 import {
   createAccomodation,
-  getPlace,
-  getPlaces,
-  updatePlace,
+  getUserPlace,
+  getUserPlaces,
+  updateUserPlace,
 } from '../controller/place';
 import { protectedAuthRoute } from '../controller/auth';
 
-const placeRouter = express.Router().all('*', protectedAuthRoute());
+const placeRouter = express.Router();
 
-placeRouter.get('/', getPlaces);
-placeRouter.post('/create', createAccomodation);
-const placeIdRoute = placeRouter.route('/:placeId');
-placeIdRoute.get(getPlace);
-placeIdRoute.put(updatePlace);
+const protectPlaceRouter = placeRouter.use(protectedAuthRoute());
+
+protectPlaceRouter.get('/user', getUserPlaces);
+protectPlaceRouter
+  .route('/user/:placeId')
+  .get(getUserPlace)
+  .put(updateUserPlace);
+protectPlaceRouter.post('/user/create', createAccomodation);
 
 export { placeRouter };

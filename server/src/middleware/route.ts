@@ -2,12 +2,13 @@ import { Express } from 'express';
 import { userRouter } from '../router/user';
 import { imageRouter } from '../router/image';
 import { placeRouter } from '../router/place';
-import { protectedAuthRoute } from '../controller/auth';
+import { globalErrorHandler } from './handleError';
 
 const mountRoute = (app: Express) => {
   app.use(imageRouter);
   app.use('/auth', userRouter);
-  app.use('/place', protectedAuthRoute(), placeRouter);
+  app.use('/place', placeRouter);
+  app.use(globalErrorHandler);
 };
 
 export { mountRoute };

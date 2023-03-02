@@ -164,7 +164,7 @@ const AccomodationForm = () => {
               id: _id ?? id,
               ...data,
               photos: getUploadImagesUrl(stageImages),
-              photoTag: placePhotoTag ?? NO_EDIT_MODE ? photos[0].id : null,
+              photoTag: placePhotoTag ?? photos[0].id,
             } as ClientAccomodationFormData;
             const response = await createPlace.mutateAsync(formData);
 
@@ -349,7 +349,49 @@ const AccomodationForm = () => {
                 <DisplayImagePreview
                   staged={staged}
                   resolveImageLink={resolveImageLink}
-                  setAsPlacePhotoTag={setPlacePhotoTag}
+                  setAsPlacePhotoTag={(id, removePhoto) => {
+                    let foundItem = false;
+                    stageImages.forEach((stage) => {
+                      if (
+                        id === stage.id &&
+                        stage.status === 'complete' &&
+                        ((stage.type === 'fetching' &&
+                          'imageServer' in stage) ||
+                          stage.type === 'uploaded')
+                      ) {
+                        foundItem = true;
+                        setPlacePhotoTag(id);
+                      }
+                    });
+
+                    if (!foundItem) {
+                      removePhoto(id, true);
+                    }
+                  }}
+                  removePhoto={(id, shouldSkipFind) => {
+                    setStageImages((renderImages) => {
+                      let nextStageImage!: typeof renderImages;
+                      if (!shouldSkipFind) {
+                        nextStageImage = renderImages.filter((stage) => {
+                          const shouldOmit = stage.id === id;
+                          if (shouldOmit && placePhotoTag === id) {
+                            setPlacePhotoTag(null);
+                          }
+                          return !shouldOmit;
+                        });
+                      }
+
+                      if (
+                        shouldSkipFind ||
+                        nextStageImage.length === renderImages.length
+                      ) {
+                        nextStageImage = renderImages.filter(
+                          (stage) => stage.id !== id
+                        );
+                      }
+                      return nextStageImage;
+                    });
+                  }}
                   key={staged.id}
                 />
               ))}
