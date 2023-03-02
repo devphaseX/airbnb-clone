@@ -35,7 +35,8 @@ import { CreateImagePayload } from '../../../../server/src/controller/image/uplo
 import { AccountOutletContext } from '../../pages';
 import { useQueryClient } from 'react-query';
 
-interface AccomodationFormData extends Omit<PlaceDoc, 'owner' | 'photos'> {
+interface AccomodationFormData
+  extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
   photo: string;
 }
 
@@ -43,6 +44,7 @@ interface ClientAccomodationFormData
   extends Omit<AccomodationFormData, 'photo'> {
   id?: string;
   photos: Array<CreateImagePayload>;
+  photoTag?: string;
 }
 
 interface ServerAccomodationData extends ClientAccomodationFormData {
@@ -67,6 +69,9 @@ const updateImageProgress =
 const NO_EDIT_MODE = Object.freeze({});
 const AccomodationForm = () => {
   const data = (useLoaderData() as ServerAccomodationData) ?? NO_EDIT_MODE;
+  const [placePhotoTag, setPlacePhotoTag] = useState<string | null>(
+    data.photoTag?.toString() ?? null
+  );
   const { photos, id, _id, ...editFormData } = data;
   const { register, handleSubmit, getValues, resetField } =
     useForm<AccomodationFormData>({ values: { ...editFormData, photo: '' } });
@@ -144,18 +149,22 @@ const AccomodationForm = () => {
         className="accomodation-form"
         onSubmit={handleSubmit(async () => {
           const hasUserChoseImage = !!stageImages.length;
-          const finishUploading =
-            hasUserChoseImage && hasUploadImagesComplete(stageImages);
+          if (!hasUserChoseImage) {
+            alert('please ensure to select an Image for the place');
+            return;
+          }
 
-          if (!finishUploading) {
+          if (!hasUploadImagesComplete(stageImages)) {
             //warn user about trying to submit the form
             //before completing image upload
           } else {
             const { photo: _, ...data } = getValues();
+            const photos = getUploadImagesUrl(stageImages);
             const formData = {
               id: _id ?? id,
               ...data,
               photos: getUploadImagesUrl(stageImages),
+              photoTag: placePhotoTag ?? NO_EDIT_MODE ? photos[0].id : null,
             } as ClientAccomodationFormData;
             const response = await createPlace.mutateAsync(formData);
 
@@ -340,6 +349,7 @@ const AccomodationForm = () => {
                 <DisplayImagePreview
                   staged={staged}
                   resolveImageLink={resolveImageLink}
+                  setAsPlacePhotoTag={setPlacePhotoTag}
                   key={staged.id}
                 />
               ))}
