@@ -1,7 +1,7 @@
 import { Mutex } from 'async-mutex';
 import type { QueryFunctionContext } from 'react-query';
 
-const EXPIRED_TOKEN_STATUS = 303;
+const EXPIRED_TOKEN_STATUS = 403;
 
 const mutex = new Mutex();
 const createQueryFn = (
@@ -18,28 +18,36 @@ const createQueryFn = (
       if (mutex.isLocked()) await mutex.waitForUnlock();
       let startFetch = false;
       let allowTokenRefresh = false;
+      let otherTryToRefreshToken: boolean = false;
       let response: Response;
-      while (!startFetch || allowTokenRefresh) {
+      while (!startFetch || allowTokenRefresh || otherTryToRefreshToken) {
         startFetch = true;
         response = await fetchFn(baseUrl, context);
-        if (!response.ok) {
-          if (response.status === EXPIRED_TOKEN_STATUS) {
-            allowTokenRefresh = mutex.isLocked();
-            if (!mutex.isLocked) {
-              let release = await mutex.acquire();
-              try {
-                const refreshTokenResponse = await refreshToken(baseUrl);
-                allowTokenRefresh = refreshTokenResponse.ok;
-              } finally {
-                release();
-              }
-            }
+        if ((allowTokenRefresh && !response.ok) || otherTryToRefreshToken)
+          break;
+
+        if (
+          !response.ok &&
+          response.status === EXPIRED_TOKEN_STATUS &&
+          !allowTokenRefresh
+        ) {
+          otherTryToRefreshToken = await mutex.isLocked();
+          if (otherTryToRefreshToken) continue;
+          const releaseLock = await mutex.acquire();
+          try {
+            const refreshTokenResponse = await refreshToken(baseUrl);
+            allowTokenRefresh = refreshTokenResponse.ok;
+          } finally {
+            releaseLock();
           }
+        } else {
+          break;
         }
       }
       return response!;
     };
 };
+
 export { createQueryFn };
 
 const fetchFn = createQueryFn('http://127.0.0.1:5001', async (baseUrl) => {
