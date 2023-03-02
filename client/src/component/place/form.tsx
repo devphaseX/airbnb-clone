@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { ActionFunctionArgs, useSubmit } from 'react-router-dom';
+import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
 import './style.css';
 import { useState } from 'react';
 import { inferImagename, inferUrlFileExt, sleep } from '../../util';
@@ -11,9 +11,12 @@ import {
   DisplayImagePreview,
   FetchImageComplete,
   FetchImageProgress,
+  FetchServerCompleteImage,
+  FetchServerFailedImage,
   ImageUploadProgress,
   createFetchImage,
   createLoadedImage,
+  createServerFetchImage,
   createUploadImage,
   getUploadImagesUrl,
   hasUploadImagesComplete,
@@ -23,12 +26,14 @@ import {
   progressImageUploadFailed,
 } from './preview';
 import type { RenderImage } from './preview';
-import { useNewPlaceMutation } from '../../store/api/place';
+import { useCreatePlace } from '../../store/mutation/place';
 import { PlaceDoc } from '../../../../server/src/model';
 import { SetStateAction } from 'react';
 import { Dispatch } from 'react';
 import { AxiosResponse } from 'axios';
 import { CreateImagePayload } from '../../../../server/src/controller/image/upload';
+import { AccountOutletContext } from '../../pages';
+import { useQueryClient } from 'react-query';
 
 interface AccomodationFormData extends Omit<PlaceDoc, 'owner' | 'photos'> {
   photo: string;
@@ -36,7 +41,13 @@ interface AccomodationFormData extends Omit<PlaceDoc, 'owner' | 'photos'> {
 
 interface ClientAccomodationFormData
   extends Omit<AccomodationFormData, 'photo'> {
+  id?: string;
   photos: Array<CreateImagePayload>;
+}
+
+interface ServerAccomodationData extends ClientAccomodationFormData {
+  id: string;
+  _id?: string;
 }
 
 type SetStageImageFn = Dispatch<
@@ -53,19 +64,26 @@ const updateImageProgress =
     );
   };
 
+const NO_EDIT_MODE = Object.freeze({});
 const AccomodationForm = () => {
+  const data = (useLoaderData() as ServerAccomodationData) ?? NO_EDIT_MODE;
+  const { photos, id, _id, ...editFormData } = data;
   const { register, handleSubmit, getValues, resetField } =
-    useForm<AccomodationFormData>();
-  const submitForm = useSubmit();
+    useForm<AccomodationFormData>({ values: { ...editFormData, photo: '' } });
   const [stageImages, setStageImages] = useState<Array<RenderImage>>([]);
   const imageRef = useRef<{ [blobImgId: string]: string }>({});
   const updateStageImage = updateImageProgress(setStageImages);
-  const post = useNewPlaceMutation();
   const abort = useRef(new AbortController()).current;
+  const createPlace = useCreatePlace();
+  const { basePath, beforeNowPath } = useOutletContext<AccountOutletContext>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const resolveImageLink = (stage: RenderImage, id: string) => {
     if (
-      (stage.type === 'fetching' && stage.status == 'complete') ||
+      (stage.type === 'fetching' &&
+        stage.status == 'complete' &&
+        !('imageServer' in stage)) ||
       stage.type === 'loaded' ||
       stage.type === 'uploaded'
     ) {
@@ -75,10 +93,38 @@ const AccomodationForm = () => {
       }
       imageRef.current[id] = url;
       return url;
+    } else if (stage.type === 'fetching' && 'imageServer' in stage) {
+      return stage.imageServer.imgUrlPath;
     }
 
     return undefined;
   };
+
+  useEffect(() => {
+    if (data !== NO_EDIT_MODE) {
+      photos.forEach(async (serverImage) => {
+        const fetchImage = createServerFetchImage(serverImage);
+        const stageImageId = fetchImage.id;
+        setStageImages((prev) => [...prev, fetchImage]);
+        await sleep(1500);
+        const validFetchResponse = await fetch(serverImage.imgUrlPath);
+
+        if (validFetchResponse.ok) {
+          updateStageImage(
+            stageImageId,
+            (render) =>
+              ({ ...render, status: 'complete' } as FetchServerCompleteImage)
+          );
+        } else {
+          updateStageImage(
+            stageImageId,
+            (render) =>
+              ({ ...render, status: 'failed' } as FetchServerFailedImage)
+          );
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     () => {
@@ -97,26 +143,40 @@ const AccomodationForm = () => {
       <form
         className="accomodation-form"
         onSubmit={handleSubmit(async () => {
-          const finishUploading = hasUploadImagesComplete(stageImages);
+          const hasUserChoseImage = !!stageImages.length;
+          const finishUploading =
+            hasUserChoseImage && hasUploadImagesComplete(stageImages);
+
           if (!finishUploading) {
             //warn user about trying to submit the form
             //before completing image upload
           } else {
             const { photo: _, ...data } = getValues();
             const formData = {
+              id: _id ?? id,
               ...data,
-              photos: getUploadImagesUrl(stageImages).filter(Boolean),
+              photos: getUploadImagesUrl(stageImages),
             } as ClientAccomodationFormData;
-            console.log(formData);
+            const response = await createPlace.mutateAsync(formData);
 
-            await fetchFn((b) =>
-              fetch(`${b}/place/create`, {
-                method: 'POST',
-                body: JSON.stringify(formData),
-                headers: { 'content-type': 'application/json' },
-                credentials: 'include',
-              })
-            )();
+            const placeQueryData = await queryClient.getQueryData<
+              ServerAccomodationData[]
+            >(['post']);
+
+            if (placeQueryData) {
+              await queryClient.cancelQueries(['places']);
+              await queryClient.setQueriesData(
+                ['post'],
+                [await response.json(), ...placeQueryData]
+              );
+            } else {
+              await queryClient.invalidateQueries(['places']);
+            }
+
+            if (response.ok) return navigate(`/${basePath}/${beforeNowPath}`);
+            else {
+              //report an issue submitting the form
+            }
           }
         })}
       >
@@ -152,6 +212,7 @@ const AccomodationForm = () => {
               {...register('photo')}
             />
             <button
+              type="button"
               onClick={async () => {
                 const imageLink = getValues().photo;
                 if (!imageLink) return;
@@ -282,7 +343,7 @@ const AccomodationForm = () => {
                   key={staged.id}
                 />
               ))}
-              <button>
+              <button type="button">
                 <label htmlFor="upload-file">Upload</label>
               </button>
             </div>
@@ -500,7 +561,9 @@ const AccomodationForm = () => {
   );
 };
 
-async function createAccomodationAction({}: ActionFunctionArgs) {}
-
-export { AccomodationForm, createAccomodationAction };
-export type { AccomodationFormData };
+export { AccomodationForm };
+export type {
+  AccomodationFormData,
+  ClientAccomodationFormData,
+  ServerAccomodationData,
+};
