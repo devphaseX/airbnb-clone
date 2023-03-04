@@ -2,13 +2,16 @@ import path from 'path';
 import fs from 'fs/promises';
 import { RequestHandler } from 'express';
 import multer from 'multer';
-import { Image } from '../../model';
+import { Image, ImageDoc, placeCreateDocSchema } from '../../model';
+import { imageSchema } from '../../model/image/image.zod.schema';
 
 const memoryStore = multer.memoryStorage();
 
 const loadImage = multer({ storage: memoryStore }).single('image');
 
-type CreateImagePayload = { id: string; filename: string; imgUrlPath: string };
+type CreateImagePayload = WithId<
+  Pick<ImageDoc, 'filename' | 'imgUrlPath' | 'owner'>
+>;
 
 type CreateImageHandler = RequestHandler;
 const createImage: CreateImageHandler = async (req, res, next) => {
@@ -23,6 +26,7 @@ const createImage: CreateImageHandler = async (req, res, next) => {
       filename,
       data: { binary: file.buffer, contentType: file.mimetype },
       imgUrlPath: `${req.protocol}://${req.headers.host}/${filename}`,
+      owner: req.user.id.toString(),
     });
 
     const { data: _, ...clientData } = image.toObject();
@@ -57,4 +61,38 @@ const getImage: GetImageHandler = async (req, res, next) => {
     next(e);
   }
 };
-export { loadImage, createImage, getImage, type CreateImagePayload };
+
+type RemoveUntagImageHandler = RequestHandler<
+  any,
+  any,
+  Array<WithId<Pick<ImageDoc, 'filename' | 'imgUrlPath' | 'owner'>>>
+>;
+
+const removeUnTagImage: RemoveUntagImageHandler = async (req, res, next) => {
+  try {
+    const untagImages = imageSchema
+      .parse(req.body)
+      .filter(({ owner }) =>
+        owner && req.user ? owner.toString() === req.user.id.toString() : false
+      );
+
+    await Promise.all([
+      untagImages.map(async ({ id }) => {
+        const image = Image.findOne({ id });
+        await image?.remove();
+      }),
+    ]);
+
+    return res.status(203).json({ message: 'deleted on untag image complete' });
+  } catch (e) {
+    // console.log(e);
+    next(e);
+  }
+};
+export {
+  loadImage,
+  createImage,
+  getImage,
+  removeUnTagImage,
+  type CreateImagePayload,
+};

@@ -5,6 +5,7 @@ const ImageSchema = new mongoose.Schema(
     filename: { type: String, require: true },
     data: { binary: Buffer, contentType: String },
     imgUrlPath: { type: String, requrie: true },
+    owner: { type: mongoose.Schema.Types.ObjectId, require: true },
   },
   { timestamps: true }
 );
