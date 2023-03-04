@@ -140,6 +140,8 @@ const AccomodationForm = () => {
       signal: imageAbortCtrl.signal,
     });
 
+    if (navigateAbortCtrl.signal.aborted) return;
+
     if (validFetchResponse.ok && !imageAbortCtrl.signal.aborted) {
       const imageFilenameFromUrl = inferImagename(imageLink);
 
@@ -158,6 +160,8 @@ const AccomodationForm = () => {
       );
 
       await sleep(1500);
+      if (navigateAbortCtrl.signal.aborted) return;
+
       const formData = new FormData();
       formData.set('image', namedImageFile);
 
@@ -178,8 +182,12 @@ const AccomodationForm = () => {
       )();
 
       await sleep(1000);
+      if (navigateAbortCtrl.signal.aborted) return;
+
       if (uploadRes.ok && !imageAbortCtrl.signal.aborted) {
         const data = await uploadRes.json();
+        if (navigateAbortCtrl.signal.aborted) return;
+
         updateStageImage(stageImageId, (render) => {
           let completedStage = progressImageUploadComplete(
             render as ImageUploadProgress,
@@ -217,6 +225,8 @@ const AccomodationForm = () => {
     formData.set('image', file);
 
     await sleep(1500);
+    if (navigateAbortCtrl.signal.aborted) return;
+
     updateStageImage(stageImageId, () =>
       createUploadImage(loadedImage.id, file, file.name)
     );
@@ -233,12 +243,15 @@ const AccomodationForm = () => {
       }
     )) as Response & AxiosResponse;
 
-    await sleep(100);
+    await sleep(1500);
+    if (navigateAbortCtrl.signal.aborted) return;
+
     if (
       !imageAbort.signal.aborted &&
       (uploadResponse.ok || uploadResponse.data)
     ) {
       const data = uploadResponse.data ?? (await uploadResponse.json());
+      if (navigateAbortCtrl.signal.aborted) return;
 
       updateStageImage(stageImageId, (render) => {
         let completedStage = progressImageUploadComplete(
@@ -285,10 +298,14 @@ const AccomodationForm = () => {
         const stageImageId = fetchImage.id;
         setStageImages((prev) => [...prev, fetchImage]);
         await sleep(1500);
+        if (navigateAbortCtrl.signal.aborted) return;
+
         const imageAbort = createRegisterAborter(stageImageId);
         const validFetchResponse = await fetch(serverImage.imgUrlPath, {
           signal: imageAbort.signal,
         });
+
+        if (navigateAbortCtrl.signal.aborted) return;
 
         if (validFetchResponse.ok && !imageAbort.signal.aborted) {
           updateStageImage(
@@ -308,6 +325,19 @@ const AccomodationForm = () => {
   }, []);
 
   useEffect(() => {
+    const abruptNavigateHandler = () => {
+      if (!hasSubmitForm.current && directUntagImages.size) {
+        const uploadImageInfo = getUnclaimedImage(true);
+
+        const blob = new Blob([JSON.stringify(uploadImageInfo)], {
+          type: 'application/json',
+        });
+        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
+      }
+    };
+
+    window.addEventListener('unload', abruptNavigateHandler, { once: true });
+
     return () => {
       Object.values(imageRef.current).forEach((imgBlobUrl) => {
         URL.revokeObjectURL(imgBlobUrl);
@@ -317,14 +347,7 @@ const AccomodationForm = () => {
 
       navigateAbortCtrl.abort();
 
-      if (!hasSubmitForm.current && directUntagImages.size) {
-        const uploadImageInfo = getUnclaimedImage(true);
-
-        const blob = new Blob([JSON.stringify(uploadImageInfo)], {
-          type: 'application/json',
-        });
-        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
-      }
+      abruptNavigateHandler();
     };
   }, []);
 
