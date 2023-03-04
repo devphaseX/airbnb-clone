@@ -1,24 +1,33 @@
+import { useQueryClient } from 'react-query';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
 import './style.css';
 import { useState } from 'react';
-import { inferImagename, inferUrlFileExt, sleep } from '../../util';
-import { fetchFn } from '../../store/api/baseUrl';
+import {
+  establishParentChildAbort,
+  getItemId,
+  inferImagename,
+  inferUrlFileExt,
+  sleep,
+} from '../../util';
+import { BASE_URL, fetchFn } from '../../store/api/baseUrl';
 import { uploadImage } from '../../store/api/uploadApi';
 import { useRef } from 'react';
 import { useEffect } from 'react';
 import {
   DisplayImagePreview,
-  FetchImageComplete,
-  FetchImageProgress,
+  FetchImageResourceComplete,
+  FetchImageResourceProgress,
   FetchServerCompleteImage,
   FetchServerFailedImage,
+  ImageUploadComplete,
   ImageUploadProgress,
   createFetchImage,
   createLoadedImage,
   createServerFetchImage,
   createUploadImage,
-  getUploadImagesUrl,
+  getStageImageServerInfo,
   hasUploadImagesComplete,
   progressFetchImageComplete,
   progressFetchImageFailed,
@@ -33,7 +42,7 @@ import { Dispatch } from 'react';
 import { AxiosResponse } from 'axios';
 import { CreateImagePayload } from '../../../../server/src/controller/image/upload';
 import { AccountOutletContext } from '../../pages';
-import { useQueryClient } from 'react-query';
+import { useImageDelete } from '../../store/mutation/deleteImage';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -76,13 +85,177 @@ const AccomodationForm = () => {
   const { register, handleSubmit, getValues, resetField } =
     useForm<AccomodationFormData>({ values: { ...editFormData, photo: '' } });
   const [stageImages, setStageImages] = useState<Array<RenderImage>>([]);
+  const directUntagImages = useRef(
+    new Map<string, ImageUploadComplete>()
+  ).current;
+  const hasSubmitForm = useRef(false);
   const imageRef = useRef<{ [blobImgId: string]: string }>({});
   const updateStageImage = updateImageProgress(setStageImages);
-  const abort = useRef(new AbortController()).current;
+  const navigateAbortCtrl = useRef(new AbortController()).current;
+  const imageAbortStore = useRef(new Map<string, AbortController>()).current;
   const createPlace = useCreatePlace();
   const { basePath, beforeNowPath } = useOutletContext<AccountOutletContext>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const deleteImageMutation = useImageDelete();
+
+  const getUnclaimedImage = (notSubmitted = false) =>
+    getStageImageServerInfo(Array.from(directUntagImages.values())).filter(
+      ({ id }) =>
+        notSubmitted || !photos.find(({ id: imageId }) => imageId === id)
+    );
+
+  const createRegisterAborter = useCallback(
+    function createRegisterAborter(id: string) {
+      const controller = new AbortController();
+      establishParentChildAbort(navigateAbortCtrl, controller);
+      const nativeAbort = controller.abort.bind(controller);
+
+      imageAbortStore.set(id, controller);
+      controller.abort = () => {
+        const stageImage = stageImages.find((stage) => getItemId(stage) === id);
+        if (
+          stageImage &&
+          stageImage.status === 'process' &&
+          (stageImage.type === 'fetching' || stageImage.type === 'uploaded')
+        ) {
+          nativeAbort();
+          imageAbortStore.delete(id);
+        }
+      };
+      return controller;
+    },
+    [navigateAbortCtrl]
+  );
+
+  async function uploadFetchedImage() {
+    const imageLink = getValues().photo;
+    if (!imageLink) return;
+    const fetchImage = createFetchImage(imageLink);
+    const stageImageId = getItemId(fetchImage);
+    setStageImages((prev) => [...prev, fetchImage]);
+    await sleep(500);
+    const imageAbortCtrl = createRegisterAborter(stageImageId);
+    const validFetchResponse = await fetch(imageLink, {
+      signal: imageAbortCtrl.signal,
+    });
+
+    if (validFetchResponse.ok && !imageAbortCtrl.signal.aborted) {
+      const imageFilenameFromUrl = inferImagename(imageLink);
+
+      const namedImageFile = new File(
+        [await validFetchResponse.blob()],
+        imageFilenameFromUrl,
+        {
+          type: `image/${inferUrlFileExt(imageFilenameFromUrl)}`,
+        }
+      );
+      updateStageImage(stageImageId, (render) =>
+        progressFetchImageComplete(
+          render as FetchImageResourceProgress,
+          namedImageFile
+        )
+      );
+
+      await sleep(1500);
+      const formData = new FormData();
+      formData.set('image', namedImageFile);
+
+      updateStageImage(stageImageId, (render) =>
+        createUploadImage(
+          (render as FetchImageResourceComplete).id,
+          (render as FetchImageResourceComplete).data,
+          imageFilenameFromUrl
+        )
+      );
+
+      const uploadRes = await fetchFn((baseUrl) =>
+        fetch(`${baseUrl}/upload`, {
+          method: 'POST',
+          body: formData,
+          signal: imageAbortCtrl.signal,
+        })
+      )();
+
+      await sleep(1000);
+      if (uploadRes.ok && !imageAbortCtrl.signal.aborted) {
+        const data = await uploadRes.json();
+        updateStageImage(stageImageId, (render) => {
+          let completedStage = progressImageUploadComplete(
+            render as ImageUploadProgress,
+            data
+          );
+          if (completedStage) {
+            directUntagImages.set(completedStage.id, completedStage);
+          }
+          return completedStage;
+        });
+
+        resetField('photo');
+      } else {
+        updateStageImage(stageImageId, (render) =>
+          progressImageUploadFailed(render as ImageUploadProgress)
+        );
+      }
+    } else {
+      updateStageImage(stageImageId, (render) =>
+        progressFetchImageFailed(render as FetchImageResourceProgress)
+      );
+    }
+  }
+
+  async function uploadFileByImage({
+    target,
+  }: React.ChangeEvent<HTMLInputElement>) {
+    const [file] = target.files ?? [];
+    if (!file) return;
+
+    const loadedImage = createLoadedImage(file);
+    const stageImageId = loadedImage.id;
+    setStageImages((prev) => [...prev, loadedImage]);
+    const formData = new FormData();
+    formData.set('image', file);
+
+    await sleep(1500);
+    updateStageImage(stageImageId, () =>
+      createUploadImage(loadedImage.id, file, file.name)
+    );
+
+    const imageAbort = createRegisterAborter(stageImageId);
+    const uploadResponse = (await uploadImage(
+      formData,
+      imageAbort.signal,
+      ({ progress }) => {
+        updateStageImage(
+          stageImageId,
+          (render) => ({ ...render, progress } as ImageUploadProgress)
+        );
+      }
+    )) as Response & AxiosResponse;
+
+    await sleep(100);
+    if (
+      !imageAbort.signal.aborted &&
+      (uploadResponse.ok || uploadResponse.data)
+    ) {
+      const data = uploadResponse.data ?? (await uploadResponse.json());
+
+      updateStageImage(stageImageId, (render) => {
+        let completedStage = progressImageUploadComplete(
+          render as ImageUploadProgress,
+          data
+        );
+        if (completedStage) {
+          directUntagImages.set(completedStage.id, completedStage);
+        }
+        return completedStage;
+      });
+    } else {
+      updateStageImage(stageImageId, (render) =>
+        progressImageUploadFailed(render as ImageUploadProgress)
+      );
+    }
+  }
 
   const resolveImageLink = (stage: RenderImage, id: string) => {
     if (
@@ -112,9 +285,12 @@ const AccomodationForm = () => {
         const stageImageId = fetchImage.id;
         setStageImages((prev) => [...prev, fetchImage]);
         await sleep(1500);
-        const validFetchResponse = await fetch(serverImage.imgUrlPath);
+        const imageAbort = createRegisterAborter(stageImageId);
+        const validFetchResponse = await fetch(serverImage.imgUrlPath, {
+          signal: imageAbort.signal,
+        });
 
-        if (validFetchResponse.ok) {
+        if (validFetchResponse.ok && !imageAbort.signal.aborted) {
           updateStageImage(
             stageImageId,
             (render) =>
@@ -132,14 +308,23 @@ const AccomodationForm = () => {
   }, []);
 
   useEffect(() => {
-    () => {
+    return () => {
       Object.values(imageRef.current).forEach((imgBlobUrl) => {
         URL.revokeObjectURL(imgBlobUrl);
       });
 
       imageRef.current = {};
 
-      abort.abort();
+      navigateAbortCtrl.abort();
+
+      if (!hasSubmitForm.current && directUntagImages.size) {
+        const uploadImageInfo = getUnclaimedImage(true);
+
+        const blob = new Blob([JSON.stringify(uploadImageInfo)], {
+          type: 'application/json',
+        });
+        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
+      }
     };
   }, []);
 
@@ -159,31 +344,39 @@ const AccomodationForm = () => {
             //before completing image upload
           } else {
             const { photo: _, ...data } = getValues();
-            const photos = getUploadImagesUrl(stageImages);
+            const photos = getStageImageServerInfo(stageImages);
+            const unclaimRemoveImage = getUnclaimedImage();
             const formData = {
               id: _id ?? id,
               ...data,
-              photos: getUploadImagesUrl(stageImages),
+              photos,
               photoTag: placePhotoTag ?? photos[0].id,
             } as ClientAccomodationFormData;
+
+            if (unclaimRemoveImage.length) {
+              await deleteImageMutation.mutateAsync(unclaimRemoveImage, {
+                onSuccess: () => directUntagImages.clear(),
+              });
+            }
             const response = await createPlace.mutateAsync(formData);
 
-            const placeQueryData = await queryClient.getQueryData<
-              ServerAccomodationData[]
-            >(['post']);
+            if (response.ok) {
+              const placeQueryData = await queryClient.getQueryData<
+                ServerAccomodationData[]
+              >(['post']);
 
-            if (placeQueryData) {
-              await queryClient.cancelQueries(['places']);
-              await queryClient.setQueriesData(
-                ['post'],
-                [await response.json(), ...placeQueryData]
-              );
+              if (placeQueryData) {
+                await queryClient.cancelQueries(['places']);
+                await queryClient.setQueriesData(
+                  ['post'],
+                  [await response.json(), ...placeQueryData]
+                );
+              } else {
+                await queryClient.invalidateQueries(['places']);
+              }
+              hasSubmitForm.current = true;
+              return navigate(`/${basePath}/${beforeNowPath}`);
             } else {
-              await queryClient.invalidateQueries(['places']);
-            }
-
-            if (response.ok) return navigate(`/${basePath}/${beforeNowPath}`);
-            else {
               //report an issue submitting the form
             }
           }
@@ -220,77 +413,7 @@ const AccomodationForm = () => {
               placeholder="Add using a link...jpg"
               {...register('photo')}
             />
-            <button
-              type="button"
-              onClick={async () => {
-                const imageLink = getValues().photo;
-                if (!imageLink) return;
-                const fetchImage = createFetchImage(imageLink);
-                const stageImageId = fetchImage.id;
-                setStageImages((prev) => [...prev, fetchImage]);
-                await sleep(500);
-                const validFetchResponse = await fetch(imageLink);
-                const imageFilenameFromUrl = inferImagename(imageLink);
-
-                const namedImageFile = new File(
-                  [await validFetchResponse.blob()],
-                  imageFilenameFromUrl,
-                  {
-                    type: `image/${inferUrlFileExt(imageFilenameFromUrl)}`,
-                  }
-                );
-
-                if (validFetchResponse.ok) {
-                  updateStageImage(stageImageId, (render) =>
-                    progressFetchImageComplete(
-                      render as FetchImageProgress,
-                      namedImageFile
-                    )
-                  );
-
-                  await sleep(1500);
-                  const formData = new FormData();
-                  formData.set('image', namedImageFile);
-
-                  updateStageImage(stageImageId, (render) =>
-                    createUploadImage(
-                      (render as FetchImageComplete).id,
-                      (render as FetchImageComplete).data,
-                      imageFilenameFromUrl
-                    )
-                  );
-
-                  const uploadRes = await fetchFn((baseUrl) =>
-                    fetch(`${baseUrl}/upload`, {
-                      method: 'POST',
-                      body: formData,
-                    })
-                  )();
-
-                  await sleep(1000);
-                  if (uploadRes.ok) {
-                    const data = await uploadRes.json();
-
-                    updateStageImage(stageImageId, (render) =>
-                      progressImageUploadComplete(
-                        render as ImageUploadProgress,
-                        data
-                      )
-                    );
-
-                    resetField('photo');
-                  } else {
-                    updateStageImage(stageImageId, (render) =>
-                      progressImageUploadFailed(render as ImageUploadProgress)
-                    );
-                  }
-                } else {
-                  updateStageImage(stageImageId, (render) =>
-                    progressFetchImageFailed(render as FetchImageProgress)
-                  );
-                }
-              }}
-            >
+            <button type="button" onClick={uploadFetchedImage}>
               Add button
             </button>
           </div>
@@ -300,49 +423,7 @@ const AccomodationForm = () => {
               type="file"
               placeholder="upload an image"
               hidden
-              onChange={async ({ target }) => {
-                const [file] = target.files ?? [];
-                if (!file) return;
-
-                const loadedImage = createLoadedImage(file);
-                const stageImageId = loadedImage.id;
-                setStageImages((prev) => [...prev, loadedImage]);
-                const formData = new FormData();
-                formData.set('image', file);
-
-                await sleep(1500);
-                updateStageImage(stageImageId, () =>
-                  createUploadImage(loadedImage.id, file, file.name)
-                );
-
-                const uploadResponse = (await uploadImage(
-                  formData,
-                  abort.signal,
-                  ({ progress }) => {
-                    updateStageImage(
-                      stageImageId,
-                      (render) =>
-                        ({ ...render, progress } as ImageUploadProgress)
-                    );
-                  }
-                )) as Response & AxiosResponse;
-
-                await sleep(100);
-                if (uploadResponse.ok || uploadResponse.data) {
-                  const data =
-                    uploadResponse.data ?? (await uploadResponse.json());
-                  updateStageImage(stageImageId, (render) =>
-                    progressImageUploadComplete(
-                      render as ImageUploadProgress,
-                      data
-                    )
-                  );
-                } else {
-                  updateStageImage(stageImageId, (render) =>
-                    progressImageUploadFailed(render as ImageUploadProgress)
-                  );
-                }
-              }}
+              onChange={uploadFileByImage}
             />
             <div className="image-box">
               {stageImages.map((staged) => (
@@ -353,14 +434,20 @@ const AccomodationForm = () => {
                     let foundItem = false;
                     stageImages.forEach((stage) => {
                       if (
-                        id === stage.id &&
-                        stage.status === 'complete' &&
-                        ((stage.type === 'fetching' &&
-                          'imageServer' in stage) ||
-                          stage.type === 'uploaded')
-                      ) {
+                        stage.status !== 'complete' ||
+                        stage.type == 'loaded' ||
+                        (stage.type === 'fetching' && !('imageServer' in stage))
+                      )
+                        return;
+
+                      const imageId = getItemId(
+                        stage.type === 'fetching'
+                          ? stage.imageServer
+                          : stage.serverImgInfo
+                      );
+                      if (imageId === id) {
                         foundItem = true;
-                        setPlacePhotoTag(id);
+                        setPlacePhotoTag(imageId);
                       }
                     });
 
@@ -370,13 +457,31 @@ const AccomodationForm = () => {
                   }}
                   removePhoto={(id, shouldSkipFind) => {
                     setStageImages((renderImages) => {
-                      let nextStageImage!: typeof renderImages;
+                      let nextStageImage = renderImages;
+
                       if (!shouldSkipFind) {
                         nextStageImage = renderImages.filter((stage) => {
                           const shouldOmit = stage.id === id;
-                          if (shouldOmit && placePhotoTag === id) {
-                            setPlacePhotoTag(null);
+                          if (shouldOmit) {
+                            if (placePhotoTag === id) {
+                              if (
+                                stage.type === 'uploaded' &&
+                                stage.status === 'complete'
+                              ) {
+                                directUntagImages.set(stage.id, stage);
+                              }
+                              setPlacePhotoTag(null);
+                            }
+
+                            if (
+                              stage.status === 'process' &&
+                              (stage.type === 'fetching' ||
+                                stage.type === 'uploaded')
+                            ) {
+                              imageAbortStore.get(id)?.abort();
+                            }
                           }
+
                           return !shouldOmit;
                         });
                       }
@@ -385,10 +490,28 @@ const AccomodationForm = () => {
                         shouldSkipFind ||
                         nextStageImage.length === renderImages.length
                       ) {
-                        nextStageImage = renderImages.filter(
-                          (stage) => stage.id !== id
-                        );
+                        nextStageImage = renderImages.filter((stage) => {
+                          const match = stage.id !== id;
+
+                          if (match) {
+                            if (
+                              stage.type === 'uploaded' &&
+                              stage.status === 'complete'
+                            ) {
+                              directUntagImages.set(stage.id, stage);
+                            }
+
+                            if (
+                              stage.status === 'process' &&
+                              (stage.type === 'fetching' ||
+                                stage.type === 'uploaded')
+                            ) {
+                              imageAbortStore.get(id)?.abort();
+                            }
+                          }
+                        });
                       }
+
                       return nextStageImage;
                     });
                   }}
