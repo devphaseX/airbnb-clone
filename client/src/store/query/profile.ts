@@ -20,6 +20,7 @@ const useProfile = () =>
       }
     },
     retry: false,
+    staleTime: Infinity,
   });
 
 export { useProfile };
