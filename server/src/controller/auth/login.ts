@@ -17,10 +17,11 @@ const signIn: SignInHandler = async (req, res, next) => {
       return res.status(404).json({});
     }
 
-    user.password = undefined;
-
     setAuthToken(res, user);
-    return res.status(200).json({ data: user });
+
+    return res.status(200).json({
+      data: await User.findOne({ email: authData.email }).select('-password'),
+    });
   } catch (e) {
     next(e);
   }

@@ -2,6 +2,7 @@ import { SchemaTimestampsConfig } from 'mongoose';
 import { z } from 'zod';
 import type { PlaceDoc } from './place.model';
 import { CreateImagePayload } from '../../controller/image/upload';
+import { imageSchema } from '../image/image.zod.schema';
 
 type PlaceDocWithoutServerGen = Omit<
   PlaceDoc,
@@ -22,15 +23,7 @@ const placeCreateDocSchema = z.object({
   extraInfo: z.string(),
   maxGuests: z.number({ coerce: true }),
   perks: z.string().array(),
-  photos: z
-    .array(
-      z.object({
-        filename: z.string(),
-        id: z.string(),
-        imgUrlPath: z.string().optional(),
-      } as Record<keyof CreateImagePayload, any>)
-    )
-    .min(1),
+  photos: imageSchema.min(1),
 } satisfies Record<keyof PlaceSchemaShapeMapStringId, any>);
 
 export { placeCreateDocSchema, type PlaceSchemaShapeMapStringId };

@@ -7,7 +7,6 @@ const refreshToken: RefreshTokenHandler = async (req, res, next) => {
   try {
     const token = req.cookies[REFRESH_TOKEN_NAME];
     const authTokenStatus = await getUserAuthStatus(token);
-
     if (authTokenStatus.type !== 'found') {
       switch (authTokenStatus.type) {
         case 'deleted': {
