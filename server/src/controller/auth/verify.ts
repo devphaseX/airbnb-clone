@@ -1,7 +1,11 @@
 import { RequestHandler, Response } from 'express';
 import { User, UserDoc } from '../../model';
 import { z } from 'zod';
-import { ACCESS_TOKEN_NAME, decodeToken } from '../../server/app/token';
+import {
+  ACCESS_TOKEN_NAME,
+  REFRESH_TOKEN_NAME,
+  decodeToken,
+} from '../../server/app/token';
 
 const parseEmailSchema = (email: string | { email: string }) =>
   z
@@ -52,7 +56,9 @@ async function getUserAuthStatus(authToken?: string): Promise<AuthStatus> {
   if (authToken) {
     const decoded = decodeToken(authToken)!;
     if (decoded && decoded.exp! - decoded.iat! > Date.now()) {
-      const user = await User.findOne({ email: decoded.email });
+      const user = await User.findOne({ email: decoded.email }).select(
+        '-password'
+      );
       if (user) {
         return { type: 'found', user };
       } else {
@@ -102,6 +108,15 @@ const protectedAuthRoute =
       }
     }
 
-    res.status(401).json({ message: 'Kindly login to be authenicated' });
+    if (req.cookies[REFRESH_TOKEN_NAME]) {
+      return res
+        .status(401)
+        .json({ message: 'Kindly login to be authenicated' });
+    } else {
+      return res.status(402).json({
+        message:
+          'The provided token is invalid or has expired. Kindly login to be authenicated',
+      });
+    }
   };
 export { verifyUser, getUserAuthStatus, protectedAuthRoute };

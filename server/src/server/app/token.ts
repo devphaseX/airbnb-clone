@@ -15,18 +15,20 @@ const getAuthTokenPayload: GetAuthTokenPayloadFn<UserDoc> = (user) => ({
 });
 
 const secret = '__hack__this';
+const getAccessTokenExpireTime = () => Date.now() + 1000 * 60 * 60 * 15;
+const getRefreshTokenExpireTime = () => Date.now() + 1000 * 60 * 60 * 24 * 30;
 function createToken(
   user: UserDoc,
   getPayload: GetAuthTokenPayloadFn<UserDoc>
 ) {
-  const authExpireTime = Date.now() + 1000 * 60 * 60 * 15;
+  const authExpireTime = getAccessTokenExpireTime();
 
   const payload = getPayload(user);
   const authToken = jsonwebToken.sign(payload, secret, {
     expiresIn: authExpireTime,
   });
 
-  const refreshExpireTime = Date.now() + 1000 * 60 * 60 * 24 * 30;
+  const refreshExpireTime = getRefreshTokenExpireTime();
 
   const refreshToken = jsonwebToken.sign(payload, secret, {
     expiresIn: refreshExpireTime,
@@ -50,12 +52,14 @@ function setAuthToken(res: Response<any, any>, payload: UserDoc) {
   res.cookie(
     ACCESS_TOKEN_NAME,
     auth.authToken,
-    createCookieConfig({ maxAge: 5700000 })
+    createCookieConfig({ maxAge: auth.authExpireTime - Date.now() + 1000 })
   );
   res.cookie(
     REFRESH_TOKEN_NAME,
     refresh.refreshToken,
-    createCookieConfig({ maxAge: 5700000 })
+    createCookieConfig({
+      maxAge: refresh.refreshExpireTime - Date.now() + 1000,
+    })
   );
 }
 
