@@ -115,12 +115,18 @@ const updateUserPlace: UpdateUserPlaceHandler = async (req, res, next) => {
       })
     );
 
-    const { photos: _, ...restData } = placeFormData;
+    let { photos: _, photoTag, ...restData } = placeFormData;
+    if (photoTag && !standByPhotos.has(photoTag.toString())) {
+      const serverImage = await Image.findById(photoTag);
+      await serverImage?.remove();
+      [photoTag] = standByPhotos;
+    }
 
     const updatePlace = await Place.create({
       ...restData,
       photos: Array.from(standByPhotos),
       owner: req.user!._id,
+      photoTag,
     });
 
     await place.remove();
@@ -139,40 +145,68 @@ const updateUserPlace: UpdateUserPlaceHandler = async (req, res, next) => {
 
 type GetPlacesHandler = RequestHandler;
 
-const getUserPlaces: GetPlacesHandler = async (req, res, next) => {
-  try {
-    const places = await Place.find({
-      owner: req.user._id! || req.user.id!,
-    }).populate('photos', 'id filename imgUrlPath');
-    return res.status(200).json(places);
-  } catch (e) {
-    next(e);
-  }
-};
+const createGetPlacesHandler =
+  (protectAccess: boolean): GetPlacesHandler =>
+  async (req, res, next) => {
+    try {
+      let places;
+      if (protectAccess) {
+        places = await Place.find({
+          owner: req.user._id! || req.user.id!,
+        })
+          .populate('photos', 'id filename imgUrlPath')
+          .select('-owner');
+      } else {
+        places = await Place.find().select('-owner');
+      }
+      return res.status(200).json(places);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+const getUserPlaces = createGetPlacesHandler(true);
+const getPlaces = createGetPlacesHandler(false);
 
 interface GetPlaceQuery extends qs.ParsedQs {
   placeId: string;
 }
 type GetPlaceHandler = RequestHandler<GetPlaceQuery>;
 
-const getUserPlace: GetPlaceHandler = async (req, res, next) => {
-  try {
-    const { placeId } = req.params;
-    console.log({ placeId });
-    const place = await Place.findOne({ id: placeId }).populate(
-      'photos',
-      'id filename imgUrlPath'
-    );
-    if (place) {
-      return res.status(200).json(place);
+const createGetPlaceHandler =
+  (protectAccess: boolean): GetPlaceHandler =>
+  async (req, res, next) => {
+    try {
+      const { placeId } = req.params;
+      let place;
+      if (protectAccess) {
+        place = await Place.findOne({ id: placeId }).populate(
+          'photos',
+          'id filename imgUrlPath'
+        );
+      } else {
+        place = await Place.findOne({ id: placeId })
+          .populate('photos', 'id filename imgUrlPath')
+          .populate('owner', '-password -birthday -createdAt -updatedAt');
+      }
+      if (place) {
+        return res.status(200).json(place);
+      }
+
+      return res
+        .status(404)
+        .json({ message: 'place with such id does not exist' });
+    } catch (e) {
+      next(e);
     }
+  };
 
-    return res
-      .status(404)
-      .json({ message: 'place with such id does not exist' });
-  } catch (e) {
-    next(e);
-  }
+const getUserPlace = createGetPlaceHandler(true);
+
+export {
+  createAccomodation,
+  getUserPlaces,
+  getUserPlace,
+  updateUserPlace,
+  getPlaces,
 };
-
-export { createAccomodation, getUserPlaces, getUserPlace, updateUserPlace };
