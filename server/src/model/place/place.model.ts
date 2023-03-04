@@ -14,6 +14,7 @@ const PlaceSchema = new mongoose.Schema({
   checkin: Number,
   checkout: Number,
   maxGuests: Number,
+  price: Number,
 });
 
 type PlaceDoc = InferSchemaType<typeof PlaceSchema>;

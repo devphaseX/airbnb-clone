@@ -155,9 +155,12 @@ const createGetPlacesHandler =
           owner: req.user._id! || req.user.id!,
         })
           .populate('photos', 'id filename imgUrlPath')
-          .select('-owner');
+          .select('-owner')
+          .populate('photoTag', 'imgUrlPath');
       } else {
-        places = await Place.find().select('-owner');
+        places = await Place.find()
+          .select('-owner')
+          .populate('photoTag', 'imgUrlPath');
       }
       return res.status(200).json(places);
     } catch (e) {
@@ -180,14 +183,14 @@ const createGetPlaceHandler =
       const { placeId } = req.params;
       let place;
       if (protectAccess) {
-        place = await Place.findOne({ id: placeId }).populate(
-          'photos',
-          'id filename imgUrlPath'
-        );
-      } else {
-        place = await Place.findOne({ id: placeId })
+        place = await Place.findById(placeId)
           .populate('photos', 'id filename imgUrlPath')
-          .populate('owner', '-password -birthday -createdAt -updatedAt');
+          .populate('photoTag', 'imgUrlPath');
+      } else {
+        place = await Place.findById(placeId)
+          .populate('photos', 'id filename imgUrlPath')
+          .populate('owner', '-password -birthday -createdAt -updatedAt')
+          .populate('photoTag', 'imgUrlPath');
       }
       if (place) {
         return res.status(200).json(place);

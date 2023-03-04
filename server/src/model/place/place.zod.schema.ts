@@ -16,6 +16,7 @@ const placeCreateDocSchema = z.object({
   id: z.string().optional(),
   title: z.string(),
   photoTag: z.string().optional(),
+  price: z.number({ coerce: true }).min(1),
   address: z.string(),
   checkin: z.number({ coerce: true }),
   checkout: z.number({ coerce: true }),
