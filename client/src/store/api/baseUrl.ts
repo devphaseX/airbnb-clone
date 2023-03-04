@@ -1,7 +1,7 @@
 import { Mutex } from 'async-mutex';
 import type { QueryFunctionContext } from 'react-query';
 
-const EXPIRED_TOKEN_STATUS = 403;
+const EXPIRED_TOKEN_STATUS = 401;
 
 const mutex = new Mutex();
 const createQueryFn = (
@@ -50,8 +50,10 @@ const createQueryFn = (
 
 export { createQueryFn };
 
-const fetchFn = createQueryFn('http://127.0.0.1:5001', async (baseUrl) => {
-  return await fetch(`${baseUrl}/auth/refresh`);
+const BASE_URL = 'http://127.0.0.1:5001';
+
+const fetchFn = createQueryFn(BASE_URL, async (baseUrl) => {
+  return await fetch(`${baseUrl}/auth/refresh`, { credentials: 'include' });
 });
 
 type ExtraOption = { signal?: AbortSignal };
@@ -65,5 +67,5 @@ type RegisterFormData = LoginFormData & {
 
 type AuthFormData = LoginFormData | RegisterFormData;
 
-export { fetchFn };
+export { fetchFn, BASE_URL };
 export type { ExtraOption, LoginFormData, RegisterFormData, AuthFormData };

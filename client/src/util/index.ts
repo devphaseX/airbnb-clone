@@ -27,6 +27,16 @@ const getItemId = <IdenifiableItem extends { _id?: string; id: string }>(
   data: IdenifiableItem
 ) => data._id ?? data.id;
 
+function establishParentChildAbort(
+  parent: AbortController,
+  child: AbortController
+) {
+  parent.signal.addEventListener('abort', function handleAbort() {
+    child.abort();
+    parent.signal.removeEventListener('abort', handleAbort);
+  });
+}
+
 export {
   mergeStyleClassName,
   authRoutePattern,
@@ -35,4 +45,5 @@ export {
   inferImagename,
   inferUrlFileExt,
   getItemId,
+  establishParentChildAbort,
 };
