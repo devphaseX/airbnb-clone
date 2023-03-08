@@ -1,0 +1,8 @@
+.place-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
+  column-gap: 32px;
+  row-gap: 48px;
+  margin-top: 24px;
+  width: 100%;
+}
