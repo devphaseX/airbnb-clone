@@ -28,4 +28,5 @@ declare global {
   type U = MapObjectIdString<{ a: [mongoose.Types.ObjectId] }>;
 
   type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+  type WithId<T extends object> = T & { id: string; _id?: string };
 }

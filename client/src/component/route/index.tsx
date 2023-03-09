@@ -13,12 +13,12 @@ import {
   shouldGrantProtectAccess,
   Account,
   Booking,
-  Places,
+  UserPlace,
 } from '../../pages';
 
-import { UserAccomodation } from '../place/accomodation';
-import { AccomodationForm } from '../../component/place/form';
-import { userAccomodationLoader } from '../place/showUserAccomodation';
+import { UserAccomodation } from '../userPlace/accomodation';
+import { AccomodationForm } from '../userPlace/form';
+import { userAccomodationLoader } from '../userPlace/showUserAccomodation';
 
 const route: RouteObject = {
   element: <Layout />,
@@ -45,7 +45,7 @@ const route: RouteObject = {
         { path: 'bookings', element: <Booking /> },
         {
           path: 'places',
-          element: <Places />,
+          element: <UserPlace />,
           children: [
             { index: true, element: <UserAccomodation /> },
 
