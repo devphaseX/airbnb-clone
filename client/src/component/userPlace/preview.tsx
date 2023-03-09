@@ -263,7 +263,7 @@ const ImagePreviewStageLoader = ({
   const _isStagedUpload = staged.type === 'uploaded';
   const isProcessingUpload = _isStagedUpload && staged.status === 'process';
   const isFailedUpload = _isStagedUpload && staged.status === 'failed';
-
+  console.log(staged);
   if (isProcessingFetch) {
     //show loading skeleton
     return <div>Loading...</div>;
@@ -291,14 +291,7 @@ const ImagePreviewStageLoader = ({
               (staged.type === 'fetching' && 'imageServer' in staged) ||
               staged.type === 'uploaded'
             ) {
-              setAsPlacePhotoTag(
-                getItemId(
-                  staged.type === 'fetching'
-                    ? staged.imageServer
-                    : staged.serverImgInfo
-                ),
-                removePhoto
-              );
+              setAsPlacePhotoTag(getItemId(staged), removePhoto);
             }
           }}
         >

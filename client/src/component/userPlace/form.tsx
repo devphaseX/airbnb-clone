@@ -288,8 +288,14 @@ const AccomodationForm = () => {
         const stageImageId = serverInitStage.current().id;
 
         await sleep(1500);
-        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
-          return;
+
+        // if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
+        //   return;
+        // }
+
+        console.log({ abort: navigateAbortCtrl.signal.aborted });
+        if (navigateAbortCtrl.signal.aborted) {
+          debugger;
         }
 
         const imageAbort = createRegisterAborter(stageImageId);
@@ -297,11 +303,16 @@ const AccomodationForm = () => {
           signal: imageAbort.signal,
         });
 
+        console.log(validFetchResponse, {
+          afterFetchAbort: navigateAbortCtrl.signal.aborted,
+          stillActive: stillActive(stageImageId),
+        });
+
         if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
           return;
         }
 
-        if (validFetchResponse.ok && !imageAbort.signal.aborted) {
+        if (validFetchResponse.ok) {
           serverInitStage.transit.complete();
         } else {
           serverInitStage.transit.failed();
@@ -324,12 +335,15 @@ const AccomodationForm = () => {
         hasUploadImagesComplete(stageImages)
       ) {
         const finalizeStagedImages = getStageImageServerInfo(stageImages);
-        const uploadImageInfo = getUnclaimedImage(finalizeStagedImages, true);
-
-        const blob = new Blob([JSON.stringify(uploadImageInfo)], {
-          type: 'application/json',
-        });
-        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
+        const [_, ...uploadImageInfo] = getUnclaimedImage(
+          finalizeStagedImages,
+          true
+        );
+        console.log(uploadImageInfo);
+        // const blob = new Blob([JSON.stringify(uploadImageInfo)], {
+        //   type: 'application/json',
+        // });
+        // window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
       }
     };
 
@@ -339,6 +353,7 @@ const AccomodationForm = () => {
 
     return () => {
       if (componentIsUmount.current) {
+        debugger;
         Object.values(imageRef.current).forEach((imgBlobUrl) => {
           URL.revokeObjectURL(imgBlobUrl);
         });
@@ -454,15 +469,19 @@ const AccomodationForm = () => {
                   resolveImageLink={resolveImageLink}
                   setAsPlacePhotoTag={(id) => {
                     const stagedImage = getStageState(id);
-
                     if (
-                      stagedImage &&
-                      stagedImage.type === 'uploaded' &&
-                      stagedImage.status === 'complete'
+                      stagedImage?.status === 'complete' &&
+                      (stagedImage.type === 'uploaded' ||
+                        (stagedImage.type === 'fetching' &&
+                          'imageServer' in stagedImage))
                     ) {
-                      setPlacePhotoTag(id);
-                    } else {
-                      //report for an error setting a progressing image
+                      const stagedImagePhotoId = getItemId(
+                        stagedImage.type === 'fetching'
+                          ? stagedImage.imageServer
+                          : stagedImage.serverImgInfo
+                      );
+
+                      setPlacePhotoTag(stagedImagePhotoId);
                     }
                   }}
                   removePhoto={(id) => {

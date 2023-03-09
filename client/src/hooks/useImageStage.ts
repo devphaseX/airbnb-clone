@@ -1,6 +1,5 @@
 import { useRef, useEffect } from 'react';
 import { createImageStager } from '../component/userPlace/createImageStager';
-import { useSyncExternalStore } from 'react';
 import { useState } from 'react';
 
 const useImageStage = () => {
@@ -23,7 +22,6 @@ const useImageStage = () => {
       setData(stageResults());
     });
   }, []);
-  console.log(data);
   return [
     data,
     {

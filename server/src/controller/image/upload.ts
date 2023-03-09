@@ -78,7 +78,8 @@ const removeUnTagImage: RemoveUntagImageHandler = async (req, res, next) => {
 
     await Promise.all([
       untagImages.map(async ({ id }) => {
-        const image = Image.findOne({ id });
+        const image = await Image.findOne({ id });
+        console.log(image?.toObject());
         await image?.remove();
       }),
     ]);

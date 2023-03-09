@@ -162,7 +162,7 @@ function createImageStager(): ImageStager {
     unsubscribe: unsubscribe,
     stageResults: () => Array.from(entryOrder.values()),
     getStageState: (id) => entryOrder.get(id) ?? null,
-    stillActive: (id) => stagerSubscribers.has(id),
+    stillActive: (id) => entryOrder.has(id),
     removeStage: remove,
     onStageChange: (cb) => {
       generalSubscriber.add(cb);
