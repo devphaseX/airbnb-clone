@@ -344,8 +344,8 @@ const AccomodationForm = () => {
         });
 
         imageRef.current = {};
-        navigateAbortCtrl.abort();
         abruptNavigateHandler();
+        navigateAbortCtrl.abort(); //remove all / stop any ongoing fetching or uploading
       }
     };
   }, [stageImages, componentIsUmount.current]);
