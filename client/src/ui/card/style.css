@@ -1,0 +1,41 @@
+.card {
+  min-width: 151px;
+  max-width: 276px;
+}
+
+.card__img {
+  height: 279px;
+  overflow: hidden;
+}
+
+.card__img img {
+  border-radius: 15px;
+  display: inline-block;
+  height: 100%;
+}
+
+.card__content {
+  margin-top: 8px;
+}
+
+.card__description {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}
+
+.card__address {
+  font-size: 1.2rem;
+  color: #5e5e5e;
+  margin-bottom: 12px;
+}
+
+.card__price {
+  font-size: 1.6rem;
+  color: #161616;
+}
