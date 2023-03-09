@@ -1,0 +1,19 @@
+.complete-preview {
+  position: relative;
+}
+
+.complete-preview .task {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  font-size: 1.4rem;
+  display: inline-flex;
+  justify-content: space-between;
+}
+
+.complete-preview .task span {
+  background-color: #000000;
+  padding: 2px;
+  color: #fff;
+}

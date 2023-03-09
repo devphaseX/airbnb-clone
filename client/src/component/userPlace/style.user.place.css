@@ -1,0 +1,43 @@
+.accomodation-list {
+  display: inline-block;
+}
+
+.show-place {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 32px;
+}
+
+.user-place {
+  display: flex;
+  column-gap: 32px;
+  background-color: #f1f1f1;
+  padding-inline: 16px;
+  padding-block: 16px;
+  border-radius: 8px;
+  color: #303030;
+}
+
+.user-place__img {
+  width: 256px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.user-place__content {
+  text-align: left;
+  padding-top: 1rem;
+}
+
+.user-place__content h4 {
+  font-size: 1.8rem;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+}
+
+.user-place__content p {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #666666;
+}
