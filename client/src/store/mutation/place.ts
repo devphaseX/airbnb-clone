@@ -1,7 +1,7 @@
 import { useMutation } from 'react-query';
 import { fetchFn } from '../api/baseUrl';
 
-import type { ClientAccomodationFormData } from '../../component/place/form';
+import type { ClientAccomodationFormData } from '../../component/userPlace/form';
 import { getItemId } from '../../util';
 
 const useCreatePlace = () =>

@@ -1,6 +1,6 @@
 import { useQuery } from 'react-query';
 import { fetchFn } from '../api/baseUrl';
-import { ServerAccomodationData } from '../../component/place/form';
+import { ServerAccomodationData } from '../../component/userPlace/form';
 
 const usePlaceQuery = () =>
   useQuery({

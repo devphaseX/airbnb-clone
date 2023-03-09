@@ -1,6 +1,6 @@
 import { UseMutationOptions, useMutation } from 'react-query';
 import { fetchFn } from '../api/baseUrl';
-import type { ImageUploadComplete } from '../../component/place/preview';
+import type { ImageUploadComplete } from '../../component/userPlace/preview';
 
 const useImageDelete = (
   option?: UseMutationOptions<

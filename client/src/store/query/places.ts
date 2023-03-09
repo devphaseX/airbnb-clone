@@ -1,12 +1,29 @@
 import { useQuery } from 'react-query';
 import { fetchFn } from '../api/baseUrl';
-import { ServerAccomodationData } from '../../component/place/form';
+import { ServerAccomodationData } from '../../component/userPlace/form';
 
-const usePlacesQuery = () =>
-  useQuery({
+type UserPlacesQueryProps = {
+  withCredentials?: boolean;
+};
+
+const getDefaultOptions = (
+  userPreference?: UserPlacesQueryProps
+): UserPlacesQueryProps => ({
+  withCredentials: false,
+  ...userPreference,
+});
+
+const usePlacesQuery = (option = getDefaultOptions()) => {
+  option = getDefaultOptions(option);
+  return useQuery({
     queryFn: (context) =>
       fetchFn((baseUrl) =>
-        fetch(`${baseUrl}/place/user/`, { credentials: 'include' })
+        fetch(
+          option.withCredentials
+            ? `${baseUrl}/place/user/`
+            : `${baseUrl}/place`,
+          { ...(option.withCredentials && { credentials: 'include' }) }
+        )
       )(context).then<Array<ServerAccomodationData>>((response) => {
         if (response.ok) {
           return response.json();
@@ -16,5 +33,6 @@ const usePlacesQuery = () =>
     queryKey: ['places'],
     staleTime: Infinity,
   });
+};
 
 export { usePlacesQuery };
