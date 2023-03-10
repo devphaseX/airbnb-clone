@@ -7,16 +7,20 @@ import {
   StageCreateFn,
   StageImageEntry,
   StageImageType,
+  StatusObserverOption,
   _InternalDefStageKey,
   createFetchResourceStage,
   createFetchServerStage,
   createLoadStage,
 } from './stageImage';
 
-type StageMap = Map<StageImageType, Map<string, RenderImage>>;
+type StageMap = Map<
+  StageImageType,
+  Map<string, StatusObserverOption<RenderImage>>
+>;
 type StageSubscriberStore = Map<string, Set<OnStageFn>>;
 type IdStageMap = Map<string, StageImageType>;
-type StageEntryOrderStore = Map<string, RenderImage>;
+type StageEntryOrderStore = Map<string, StatusObserverOption<RenderImage>>;
 
 type Terminator = () => boolean;
 
@@ -40,6 +44,7 @@ type ImageStager = {
   getStageState: (id: string) => RenderImage | null;
   stillActive: (id: string) => boolean;
   removeStage: (id: string) => boolean;
+  revertStage: (id: string) => boolean;
 };
 
 function createImageStager(): ImageStager {
@@ -51,8 +56,9 @@ function createImageStager(): ImageStager {
     new Set();
 
   const onStageChange: OnStageFn = (prev, next) => {
-    entryOrder.set(next.id, next);
-    const observerStore = stagerSubscribers.get(next.id);
+    const nextCurrent = next.current();
+    entryOrder.set(nextCurrent.id, next);
+    const observerStore = stagerSubscribers.get(nextCurrent.id);
     if (observerStore) {
       observerStore.forEach((ob) => {
         ob(prev, next);
@@ -61,16 +67,16 @@ function createImageStager(): ImageStager {
 
     if (prev) stageProgress.get(prev.type)?.delete(prev.id);
 
-    stageId.set(next.id, next.type);
-    let progressStore = stageProgress.get(next.type);
+    stageId.set(nextCurrent.id, nextCurrent.type);
+    let progressStore = stageProgress.get(nextCurrent.type);
     if (!progressStore) {
       progressStore = new Map();
-      stageProgress.set(next.type, progressStore);
+      stageProgress.set(nextCurrent.type, progressStore);
     }
 
-    progressStore.set(next.id, next);
+    progressStore.set(nextCurrent.id, next);
     generalSubscriber.forEach((cb) => {
-      cb(Array.from(entryOrder.values()));
+      cb(Array.from(entryOrder.values(), (entry) => entry.current()));
     });
   };
 
@@ -140,7 +146,7 @@ function createImageStager(): ImageStager {
       ) => {
         const stageProcess = __stagerProcess(processOption);
         stageId = stageProcess.current().id;
-        entryOrder.set(stageId!, stageProcess.current());
+        entryOrder.set(stageId!, stageProcess);
         return stageProcess;
       };
 
@@ -155,15 +161,26 @@ function createImageStager(): ImageStager {
     };
   }
 
+  function revertStage(id: string, onStage?: any) {
+    const staged = entryOrder.get(id);
+    if (!(staged && staged.revert)) return false;
+    staged.revert();
+    if (!(stagerSubscribers.get(id) && onStage)) return false;
+    if (!stagerSubscribers.has(id)) subscribeStage(id, onStage);
+    return true;
+  }
+
   return {
     fromExternalServerFetch: createStageInitiator(createFetchResourceStage),
     fromFileLoad: createStageInitiator(createLoadStage),
     fromServerFetch: createStageInitiator(createFetchServerStage),
     unsubscribe: unsubscribe,
-    stageResults: () => Array.from(entryOrder.values()),
-    getStageState: (id) => entryOrder.get(id) ?? null,
+    stageResults: () =>
+      Array.from(entryOrder.values(), (entry) => entry.current()),
+    getStageState: (id) => entryOrder.get(id)?.current() ?? null,
     stillActive: (id) => entryOrder.has(id),
     removeStage: remove,
+    revertStage,
     onStageChange: (cb) => {
       generalSubscriber.add(cb);
       let hasUnsubscribed = false;

@@ -11,10 +11,10 @@ const createQueryFn = (
   return (
       fetchFn: (
         baseUrl: string,
-        context?: QueryFunctionContext
+        context?: Pick<QueryFunctionContext, 'signal'>
       ) => Promise<Response>
     ) =>
-    async (context?: QueryFunctionContext) => {
+    async (context?: Pick<QueryFunctionContext, 'signal'>) => {
       if (mutex.isLocked()) await mutex.waitForUnlock();
       let startFetch = false;
       let allowTokenRefresh = false;

@@ -14,6 +14,8 @@ import {
   Account,
   Booking,
   UserPlace,
+  Place,
+  placeLoader,
 } from '../../pages';
 
 import { UserAccomodation } from '../userPlace/accomodation';
@@ -35,6 +37,8 @@ const route: RouteObject = {
       element: <Authenicate />,
       loader: shouldBlockAuthAccess,
     },
+
+    { path: '/place/:placeId', element: <Place />, loader: placeLoader },
     {
       path: '/account',
       element: <Account />,

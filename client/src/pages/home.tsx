@@ -1,9 +1,9 @@
-import { Place } from '../component/places';
+import { PlaceList } from '../component/places';
 
 const Home = () => {
   return (
     <div className="section-wrapper" style={{ width: '100%' }}>
-      <Place />
+      <PlaceList />
       <div>Hi</div>
     </div>
   );

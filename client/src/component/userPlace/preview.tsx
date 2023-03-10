@@ -116,78 +116,47 @@ type RenderImage = FetchImage | LoadedImage | UploadedImage;
 
 const genNaiveRandomId = () => Math.random().toString(32).slice(2);
 
-const createLoadedImage = (file: File, id?: string): FileLoadImageProgress => ({
-  id: id ?? genNaiveRandomId(),
-  type: 'loaded',
-  status: 'process',
-  filename: file.name,
-});
-
-const createFetchImage = (href: string): FetchImageResourceProgress => ({
-  id: genNaiveRandomId(),
-  type: 'fetching',
-  status: 'process',
-  href,
-});
-
-const createServerFetchImage = (
-  file: CreateImagePayload
-): FetchServerProgressImage => ({
-  id: getItemId(file),
-  status: 'process',
-  type: 'fetching',
-  filename: file.filename,
-  imageServer: file,
-});
-
-const createUploadImage = (
-  id: string,
-  file: File | Blob,
-  filename: string
-): ImageUploadProgress => ({
-  id,
-  type: 'uploaded',
-  status: 'process',
-  filename,
-  data: file,
-});
-
-const canRenderImagePreview = (
-  image: RenderImage
-): image is
+const canPreviewStageImage = (
+  stage: RenderImage
+): stage is
   | LoadedImage
   | FetchImageResourceComplete
   | UploadedImage
   | FetchServerCompleteImage =>
-  image.type === 'loaded' ||
-  (image.type === 'fetching' && image.status === 'complete') ||
-  image.type === 'uploaded';
+  (stage.status === 'complete' &&
+    (stage.type === 'loaded' || stage.type === 'fetching')) ||
+  stage.type === 'uploaded';
 
-const progressFetchImageComplete = (
-  stage: FetchImageResourceProgress,
-  data: FetchImageResourceComplete['data']
-): FetchImageResourceComplete => ({
-  ...stage,
-  status: 'complete',
-  data,
-});
+const getstagedImageReadyStatus = (
+  staged: RenderImage
+): staged is FetchServerCompleteImage | ImageUploadComplete =>
+  staged.status === 'complete' &&
+  (staged.type === 'uploaded' ||
+    (staged.type === 'fetching' && 'imageServer' in staged));
 
-const progressFetchImageFailed = (
-  stage: FetchImageResourceProgress,
-  notFound?: boolean
-): FetchImageResourceFail => ({ ...stage, status: 'failed', notFound });
+const getStagedImageProcessStatus = (
+  staged: RenderImage
+): staged is
+  | FetchImageResourceProgress
+  | FetchServerProgressImage
+  | ImageUploadProgress
+  | ImageUploadProgress =>
+  staged.status === 'process' &&
+  (staged.type === 'fetching' ||
+    staged.type === 'uploaded' ||
+    staged.type === 'loaded');
 
-const progressImageUploadComplete = (
-  stage: ImageUploadProgress,
-  serverImgInfo: CreateImagePayload
-): ImageUploadComplete => ({
-  id: stage.id,
-  type: stage.type,
-  status: 'complete',
-  filename: stage.filename,
-  data: stage.data,
-  serverImgInfo,
-});
+const getStagedImageFailedStatus = (
+  staged: RenderImage
+): staged is
+  | FetchImageResourceFail
+  | ImageUploadFail
+  | FetchServerFailedImage
+  | ImageUploadFail => staged.status === 'failed';
+
+const unwrapServerStageResult = (
+  stage: FetchServerImage | ImageUploadComplete
+) => ('imageServer' in stage ? stage.imageServer : stage.serverImgInfo);
 
 const mapServerIdToClient = <
   IdentifiableItem extends { _id?: string; id: string }
@@ -201,26 +170,13 @@ const getStageImageServerInfo = (
   staged: Array<ImageUploadComplete | FetchServerCompleteImage>
 ) =>
   staged
-    .map((record) =>
-      mapServerIdToClient(
-        record.type === 'fetching' ? record.imageServer : record.serverImgInfo
-      )
-    )
+    .map((record) => mapServerIdToClient(unwrapServerStageResult(record)))
     .filter((info): info is NonNullable<typeof info> => !!info);
 
-const progressImageUploadFailed = (
-  stage: ImageUploadProgress
-): ImageUploadFail => ({ ...stage, status: 'failed' });
-
-const hasUploadImagesComplete = (
-  stageImages: Array<RenderImage>
-): stageImages is Array<ImageUploadComplete> =>
-  !!stageImages.length &&
-  stageImages.every(
-    (stage) =>
-      stage.type === 'uploaded' ||
-      (stage.type === 'fetching' && 'imageServer' in stage)
-  );
+const clientQualifyToSendStageImage = (
+  stages: Array<RenderImage>
+): stages is Array<ImageUploadComplete | FetchServerCompleteImage> =>
+  !!stages.length && stages.every(getstagedImageReadyStatus);
 
 type DisplayImagePreviewProps = PreviewProp & {
   setAsPlacePhotoTag: (
@@ -250,7 +206,7 @@ const ImagePreviewStageLoader = ({
   setAsPlacePhotoTag,
   removePhoto,
 }: ImagePreviewStageLoaderProps) => {
-  const qualifyForPreview = canRenderImagePreview(staged);
+  const qualifyForPreview = canPreviewStageImage(staged);
   const url = resolveImageLink(staged, staged.id);
   //fetching staged
   const _isStagedFetch = staged.type === 'fetching';
@@ -263,7 +219,7 @@ const ImagePreviewStageLoader = ({
   const _isStagedUpload = staged.type === 'uploaded';
   const isProcessingUpload = _isStagedUpload && staged.status === 'process';
   const isFailedUpload = _isStagedUpload && staged.status === 'failed';
-  console.log(staged);
+
   if (isProcessingFetch) {
     //show loading skeleton
     return <div>Loading...</div>;
@@ -287,12 +243,8 @@ const ImagePreviewStageLoader = ({
       <div className="task">
         <span
           onClick={() => {
-            if (
-              (staged.type === 'fetching' && 'imageServer' in staged) ||
-              staged.type === 'uploaded'
-            ) {
+            if (getstagedImageReadyStatus(staged))
               setAsPlacePhotoTag(getItemId(staged), removePhoto);
-            }
           }}
         >
           Mark
@@ -306,16 +258,11 @@ const ImagePreviewStageLoader = ({
 export {
   getStageImageServerInfo,
   DisplayImagePreview,
-  createFetchImage,
-  createLoadedImage,
-  createUploadImage,
-  hasUploadImagesComplete,
-  progressFetchImageComplete,
-  progressFetchImageFailed,
-  progressImageUploadFailed,
-  progressImageUploadComplete,
-  createServerFetchImage,
+  clientQualifyToSendStageImage,
   genNaiveRandomId,
+  getstagedImageReadyStatus,
+  getStagedImageProcessStatus,
+  getStagedImageFailedStatus,
 };
 
 export type {

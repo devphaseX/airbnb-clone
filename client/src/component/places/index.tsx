@@ -3,7 +3,7 @@ import { Card } from '../../ui/card';
 import { getItemId } from '../../util';
 import './style.css';
 
-const Place = () => {
+const PlaceList = () => {
   const { isLoading, data } = usePlacesQuery();
 
   let content: React.ReactNode;
@@ -22,4 +22,4 @@ const Place = () => {
   return <div className="place-list">{content}</div>;
 };
 
-export { Place };
+export { PlaceList };

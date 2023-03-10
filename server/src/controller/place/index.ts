@@ -188,8 +188,8 @@ const createGetPlaceHandler =
           .populate('photoTag', 'imgUrlPath');
       } else {
         place = await Place.findById(placeId)
+          .select('-owner')
           .populate('photos', 'id filename imgUrlPath')
-          .populate('owner', '-password -birthday -createdAt -updatedAt')
           .populate('photoTag', 'imgUrlPath');
       }
       if (place) {
@@ -205,6 +205,7 @@ const createGetPlaceHandler =
   };
 
 const getUserPlace = createGetPlaceHandler(true);
+const getPlace = createGetPlaceHandler(false);
 
 export {
   createAccomodation,
@@ -212,4 +213,5 @@ export {
   getUserPlace,
   updateUserPlace,
   getPlaces,
+  getPlace,
 };

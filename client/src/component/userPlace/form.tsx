@@ -18,9 +18,10 @@ import { useEffect } from 'react';
 import {
   DisplayImagePreview,
   ImageUploadComplete,
-  createFetchImage,
+  clientQualifyToSendStageImage,
   getStageImageServerInfo,
-  hasUploadImagesComplete,
+  getStagedImageProcessStatus,
+  getstagedImageReadyStatus,
 } from './preview';
 import type { RenderImage } from './preview';
 import { useCreatePlace } from '../../store/mutation/place';
@@ -30,6 +31,7 @@ import { CreateImagePayload } from '../../../../server/src/controller/image/uplo
 import { AccountOutletContext } from '../../pages';
 import { useImageDelete } from '../../store/mutation/deleteImage';
 import { useImageStage } from '../../hooks/useImageStage';
+import { unwrapStatusObserverPayload } from './stageImage';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -108,13 +110,7 @@ const AccomodationForm = () => {
         const currentStage = getStageState(id);
         if (currentStage) {
           removeStage(id);
-          if (
-            currentStage.status === 'process' &&
-            (currentStage.type === 'fetching' ||
-              currentStage.type === 'uploaded')
-          ) {
-            childAbort();
-          }
+          if (getStagedImageProcessStatus(currentStage)) childAbort();
         }
       };
 
@@ -130,18 +126,17 @@ const AccomodationForm = () => {
     const imageFilenameFromUrl = inferImagename(imageLink);
     const [{ process: stageInitiator }, unsubscribe] = fromExternalServerFetch({
       filename: imageFilenameFromUrl,
-      onStageChange: (__, payload) => {
+      onStageChange: unwrapStatusObserverPayload((__, payload) => {
         if (payload.type === 'uploaded' && payload.status === 'complete') {
           directUntagImages.set(payload.id, payload);
           imageAbortStore.delete(payload.id);
           unsubscribe();
         }
-      },
+      }),
     });
 
     const fetchStage = stageInitiator({ href: imageLink });
-    const fetchImage = createFetchImage(imageLink);
-    const stageImageId = getItemId(fetchImage);
+    const stageImageId = getItemId(fetchStage.current());
     await sleep(500);
     const imageAbortCtrl = createRegisterAborter(stageImageId);
     const validFetchResponse = await fetch(imageLink, {
@@ -212,13 +207,13 @@ const AccomodationForm = () => {
 
     const [{ process: stageInitiator }, unsubscribe] = fromFileLoad({
       filename: file.name,
-      onStageChange(__, payload) {
+      onStageChange: unwrapStatusObserverPayload((__, payload) => {
         if (payload.type === 'uploaded' && payload.status === 'complete') {
           directUntagImages.set(payload.id, payload);
           imageAbortStore.delete(payload.id);
           unsubscribe();
         }
-      },
+      }),
     });
     const loadCompleteStage = stageInitiator().transit.complete({ data: file });
     const stageImageId = loadCompleteStage.current().id;
@@ -289,23 +284,13 @@ const AccomodationForm = () => {
 
         await sleep(1500);
 
-        // if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
-        //   return;
-        // }
-
-        console.log({ abort: navigateAbortCtrl.signal.aborted });
-        if (navigateAbortCtrl.signal.aborted) {
-          debugger;
+        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
+          return;
         }
 
         const imageAbort = createRegisterAborter(stageImageId);
         const validFetchResponse = await fetch(serverImage.imgUrlPath, {
           signal: imageAbort.signal,
-        });
-
-        console.log(validFetchResponse, {
-          afterFetchAbort: navigateAbortCtrl.signal.aborted,
-          stillActive: stillActive(stageImageId),
         });
 
         if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
@@ -332,18 +317,17 @@ const AccomodationForm = () => {
       if (
         !hasSubmitForm.current &&
         directUntagImages.size &&
-        hasUploadImagesComplete(stageImages)
+        clientQualifyToSendStageImage(stageImages)
       ) {
         const finalizeStagedImages = getStageImageServerInfo(stageImages);
         const [_, ...uploadImageInfo] = getUnclaimedImage(
           finalizeStagedImages,
           true
         );
-        console.log(uploadImageInfo);
-        // const blob = new Blob([JSON.stringify(uploadImageInfo)], {
-        //   type: 'application/json',
-        // });
-        // window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
+        const blob = new Blob([JSON.stringify(uploadImageInfo)], {
+          type: 'application/json',
+        });
+        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
       }
     };
 
@@ -353,7 +337,6 @@ const AccomodationForm = () => {
 
     return () => {
       if (componentIsUmount.current) {
-        debugger;
         Object.values(imageRef.current).forEach((imgBlobUrl) => {
           URL.revokeObjectURL(imgBlobUrl);
         });
@@ -376,7 +359,7 @@ const AccomodationForm = () => {
             return;
           }
 
-          if (!hasUploadImagesComplete(stageImages)) {
+          if (!clientQualifyToSendStageImage(stageImages)) {
             //warn user about trying to submit the form
             //before completing image upload
           } else {
@@ -469,12 +452,7 @@ const AccomodationForm = () => {
                   resolveImageLink={resolveImageLink}
                   setAsPlacePhotoTag={(id) => {
                     const stagedImage = getStageState(id);
-                    if (
-                      stagedImage?.status === 'complete' &&
-                      (stagedImage.type === 'uploaded' ||
-                        (stagedImage.type === 'fetching' &&
-                          'imageServer' in stagedImage))
-                    ) {
+                    if (stagedImage && getstagedImageReadyStatus(stagedImage)) {
                       const stagedImagePhotoId = getItemId(
                         stagedImage.type === 'fetching'
                           ? stagedImage.imageServer

@@ -36,6 +36,10 @@ declare global {
     Omit<Parameters<T>[0], '__'>,
     ReturnType<T>
   ];
+
+  type Expand<O extends object> = O extends infer FlatObject
+    ? { [K in keyof FlatObject]: FlatObject[K] }
+    : never;
 }
 
 type StageImageStatusProgress<A, B> = {
@@ -142,7 +146,9 @@ type StageImageResult<Stage extends StageImageEntry> = {
         args: Stage['process']['next'][K]['0']['distinct']
       ) => {
         current: () => InferProgressStateType<Stage['process']['next'][K]['0']>;
-        revert?: () => ReturnType<StageImageResult<Stage>['process']>;
+        revert?: (
+          option?: CreateStageOptionTraitProps
+        ) => ReturnType<StageImageResult<Stage>['process']>;
       } & (Stage['process']['next'][K] extends [
         any,
         infer R extends StageImageEntry
@@ -459,21 +465,41 @@ type StageBaseFn = (
   option: CreateStageOption<StageImageEntry>
 ) => StageImageResult<StageImageEntry>;
 
+type StageRevertBaseProcess = ReturnType<
+  ReturnType<ReturnType<StageBaseFn>['process']>['transit'][string]
+>;
+
 type StageCreateFn<Entry extends StageImageEntry, RemoveKey extends string> = (
   option: CreateStageOption<Entry, RemoveKey>
 ) => StageImageResult<Entry>;
 
-type StatusObserverOption<Payload> = { current: () => Payload };
-type OnStageFn = (prev: RenderImage | null, next: RenderImage) => void;
+type StatusObserverOption<Payload> = {
+  current: () => Payload;
+  revert?: (
+    option?: CreateStageOptionTraitProps
+  ) => StatusObserverOption<Payload>;
+};
+type OnStageFn = (
+  prev: RenderImage | null,
+  next: StatusObserverOption<RenderImage>
+) => void;
 function createStatusObserver(cb: OnStageFn) {
   return function observe<
     Payload extends RenderImage,
     State extends StatusObserverOption<Payload>
   >(prevStage: null | RenderImage, stateV: State) {
-    cb(prevStage, { ...stateV.current() });
+    cb(prevStage, stateV);
     return stateV as any;
   };
 }
+
+type OnStageResultFn = (prev: RenderImage | null, next: RenderImage) => void;
+
+const unwrapStatusObserverPayload =
+  (cb: OnStageResultFn): OnStageFn =>
+  (prev, payload) => {
+    cb(prev, payload.current());
+  };
 
 type MigrateObserverOption<Payload, NextProgressStage> =
   StatusObserverOption<Payload> & {
@@ -515,6 +541,7 @@ export {
   createStatusObserver,
   createMigrateObserver,
   createFetchResourceStage,
+  unwrapStatusObserverPayload,
 };
 export type {
   StageImageType,
@@ -533,4 +560,6 @@ export type {
   _InternalDefStageKey,
   GetStageFunctionPart,
   CreateStageOptionTraitProps,
+  StageRevertBaseProcess,
+  StatusObserverOption,
 };
