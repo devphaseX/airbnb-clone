@@ -263,6 +263,7 @@ export {
   getstagedImageReadyStatus,
   getStagedImageProcessStatus,
   getStagedImageFailedStatus,
+  unwrapServerStageResult,
 };
 
 export type {

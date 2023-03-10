@@ -105,9 +105,12 @@ function createImageStager(): ImageStager {
     if (stageTypeStore && stageTypeStore.get(id)) {
       stageTypeStore.delete(id);
       entryOrder.delete(id);
+
+      generalSubscriber.forEach((cb) => {
+        cb(Array.from(entryOrder.values(), (entry) => entry.current()));
+      });
       return true;
     }
-
     return false;
   }
 

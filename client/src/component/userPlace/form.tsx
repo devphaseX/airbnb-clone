@@ -22,6 +22,7 @@ import {
   getStageImageServerInfo,
   getStagedImageProcessStatus,
   getstagedImageReadyStatus,
+  unwrapServerStageResult,
 } from './preview';
 import type { RenderImage } from './preview';
 import { useCreatePlace } from '../../store/mutation/place';
@@ -467,7 +468,10 @@ const AccomodationForm = () => {
                     if (stageImage) {
                       imageAbortStore.get(id)?.abort();
 
-                      if (stageImage.id === placePhotoTag) {
+                      if (
+                        getstagedImageReadyStatus(stageImage) &&
+                        unwrapServerStageResult(stageImage) === placePhotoTag
+                      ) {
                         setPlacePhotoTag(null);
                       }
                     }

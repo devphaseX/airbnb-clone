@@ -37,8 +37,8 @@ declare global {
     ReturnType<T>
   ];
 
-  type Expand<O extends object> = O extends infer FlatObject
-    ? { [K in keyof FlatObject]: FlatObject[K] }
+  type Expand<O extends object> = O extends infer CompositeObject
+    ? { [K in keyof CompositeObject]: CompositeObject[K] }
     : never;
 }
 
