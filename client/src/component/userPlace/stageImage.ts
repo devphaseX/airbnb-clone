@@ -166,6 +166,7 @@ type CreateStageOptionTraitProps = {
   __?: {
     preMadeOnStage?: ReturnType<typeof createStatusObserver>;
     prevMadeOnMigrate?: ReturnType<typeof createMigrateObserver>;
+    id?: string;
   };
 };
 
@@ -192,7 +193,7 @@ function createFetchServerStage(
           : idenity);
 
       let processStage: FetchServerProgressImage = {
-        id: genNaiveRandomId(),
+        id: option.__?.id ?? genNaiveRandomId(),
         type: 'fetching',
         status: 'process',
         ...option,
@@ -214,13 +215,6 @@ function createFetchServerStage(
                 ...processStage,
                 status: 'complete',
               }),
-              revert: () =>
-                createFetchServerStage({
-                  ...option,
-                  __: {
-                    preMadeOnStage: onStage,
-                  },
-                }).process({ imageServer }),
             }),
           failed: () =>
             onStage(
@@ -232,6 +226,7 @@ function createFetchServerStage(
                     ...option,
                     __: {
                       preMadeOnStage: onStage,
+                      id: processStage.id,
                     },
                   }).process({ imageServer }),
               }
@@ -256,7 +251,7 @@ function createFetchResourceStage(
         option.__?.prevMadeOnMigrate ??
         (option.onMigrate ? createMigrateObserver(option.onMigrate) : idenity);
       let processStage: FetchImageResourceProgress = {
-        id: genNaiveRandomId(),
+        id: option.__?.id ?? genNaiveRandomId(),
         type: 'fetching',
         status: 'process',
         ...option,
@@ -300,6 +295,7 @@ function createFetchResourceStage(
                     __: {
                       preMadeOnStage: onStage,
                       prevMadeOnMigrate: onMigrate,
+                      id: processStage.id,
                     },
                   }).process({ href }),
               }
@@ -324,7 +320,7 @@ function createLoadStage(
         option.__?.prevMadeOnMigrate ??
         (option.onMigrate ? createMigrateObserver(option.onMigrate) : idenity);
       const processStage: FileLoadImageProgress = {
-        id: genNaiveRandomId(),
+        id: option.__?.id ?? genNaiveRandomId(),
         type: 'loaded',
         status: 'process',
         ...option,
@@ -371,6 +367,7 @@ function createLoadStage(
                     __: {
                       preMadeOnStage: onStage,
                       prevMadeOnMigrate: onMigrate,
+                      id: processStage.id,
                     },
                   }).process(),
               }
@@ -537,4 +534,5 @@ export type {
   CreateStageOptionTraitProps,
   StageRevertBaseProcess,
   StageState,
+  OnStageResultFn,
 };

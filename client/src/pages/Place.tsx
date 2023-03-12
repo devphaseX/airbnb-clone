@@ -4,7 +4,12 @@ import type { ServerAccomodationData } from '../component/userPlace/form';
 
 const Place = () => {
   const placeData = useLoaderData() as ServerAccomodationData;
-  return <div>{JSON.stringify(placeData)}</div>;
+  console.log(placeData);
+  return (
+    <div style={{ fontSize: '1.2rem' }}>
+      {JSON.stringify(placeData, ['title'])}
+    </div>
+  );
 };
 
 export { Place };

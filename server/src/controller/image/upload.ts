@@ -46,6 +46,7 @@ const getImage: GetImageHandler = async (req, res, next) => {
     if (image) {
       const imagePath = path.join(__dirname, 'file', 'images', imageName);
       await fs.writeFile(imagePath, image.data!.binary!);
+      // return res.sendStatus(404).json({});
       return res
         .set('content-type', image?.data?.contentType)
         .sendFile(imagePath, () => {

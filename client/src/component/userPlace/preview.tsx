@@ -116,7 +116,7 @@ type RenderImage = FetchImage | LoadedImage | UploadedImage;
 
 const genNaiveRandomId = () => Math.random().toString(32).slice(2);
 
-const canPreviewStageImage = (
+const stageImageUpForPreview = (
   stage: RenderImage
 ): stage is
   | LoadedImage
@@ -127,14 +127,14 @@ const canPreviewStageImage = (
     (stage.type === 'loaded' || stage.type === 'fetching')) ||
   stage.type === 'uploaded';
 
-const getstagedImageReadyStatus = (
+const stageImageServerFinalizeStatus = (
   staged: RenderImage
 ): staged is FetchServerCompleteImage | ImageUploadComplete =>
   staged.status === 'complete' &&
   (staged.type === 'uploaded' ||
     (staged.type === 'fetching' && 'imageServer' in staged));
 
-const getStagedImageProcessStatus = (
+const stageImageOnProcess = (
   staged: RenderImage
 ): staged is
   | FetchImageResourceProgress
@@ -146,7 +146,7 @@ const getStagedImageProcessStatus = (
     staged.type === 'uploaded' ||
     staged.type === 'loaded');
 
-const getStagedImageFailedStatus = (
+const stagedImageFailStatus = (
   staged: RenderImage
 ): staged is
   | FetchImageResourceFail
@@ -176,7 +176,7 @@ const getStageImageServerInfo = (
 const clientQualifyToSendStageImage = (
   stages: Array<RenderImage>
 ): stages is Array<ImageUploadComplete | FetchServerCompleteImage> =>
-  !!stages.length && stages.every(getstagedImageReadyStatus);
+  !!stages.length && stages.every(stageImageServerFinalizeStatus);
 
 type DisplayImagePreviewProps = PreviewProp & {
   setAsPlacePhotoTag: (
@@ -208,7 +208,7 @@ const ImagePreviewStageLoader = ({
   removePhoto,
   retryStage,
 }: ImagePreviewStageLoaderProps) => {
-  const qualifyForPreview = canPreviewStageImage(staged);
+  const qualifyForPreview = stageImageUpForPreview(staged);
   const url = resolveImageLink(staged, staged.id);
   //fetching staged
   const _isStagedFetch = staged.type === 'fetching';
@@ -255,7 +255,7 @@ const ImagePreviewStageLoader = ({
       <div className="task">
         <span
           onClick={() => {
-            if (getstagedImageReadyStatus(staged))
+            if (stageImageServerFinalizeStatus(staged))
               setAsPlacePhotoTag(getItemId(staged), removePhoto);
           }}
         >
@@ -272,9 +272,9 @@ export {
   DisplayImagePreview,
   clientQualifyToSendStageImage,
   genNaiveRandomId,
-  getstagedImageReadyStatus,
-  getStagedImageProcessStatus,
-  getStagedImageFailedStatus,
+  stageImageServerFinalizeStatus,
+  stageImageOnProcess,
+  stagedImageFailStatus,
   unwrapServerStageResult,
 };
 

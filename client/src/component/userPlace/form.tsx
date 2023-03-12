@@ -18,10 +18,11 @@ import { useEffect } from 'react';
 import {
   DisplayImagePreview,
   ImageUploadComplete,
+  ImageUploadProgress,
   clientQualifyToSendStageImage,
   getStageImageServerInfo,
-  getStagedImageProcessStatus,
-  getstagedImageReadyStatus,
+  stageImageOnProcess,
+  stageImageServerFinalizeStatus,
   unwrapServerStageResult,
 } from './preview';
 import type { RenderImage } from './preview';
@@ -32,7 +33,7 @@ import { CreateImagePayload } from '../../../../server/src/controller/image/uplo
 import { AccountOutletContext } from '../../pages';
 import { useImageDelete } from '../../store/mutation/deleteImage';
 import { useImageStage } from '../../hooks/useImageStage';
-import { unwrapStatusObserverPayload } from './stageImage';
+import { OnStageResultFn, unwrapStatusObserverPayload } from './stageImage';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -55,6 +56,19 @@ interface ServerAccomodationData extends ClientAccomodationFormData {
     ? Exclude<PhotoTag, string>
     : never;
 }
+
+const createStopStageObserverFn =
+  (
+    onMatch: (
+      prev: ImageUploadProgress | null,
+      next: ImageUploadComplete
+    ) => void
+  ): OnStageResultFn =>
+  (prev, next) => {
+    if (next.type === 'uploaded' && next.status === 'complete') {
+      onMatch(prev as ImageUploadProgress | null, next);
+    }
+  };
 
 const NO_EDIT_MODE = Object.freeze({});
 const AccomodationForm = () => {
@@ -112,7 +126,7 @@ const AccomodationForm = () => {
         const currentStage = getStageState(id);
         if (currentStage) {
           removeStage(id);
-          if (getStagedImageProcessStatus(currentStage)) childAbort();
+          if (stageImageOnProcess(currentStage)) childAbort();
         }
       };
 
@@ -129,13 +143,13 @@ const AccomodationForm = () => {
     const [{ process: stageInitiator }, unsubscribe, retryAwaiter] =
       fromExternalServerFetch({
         filename: imageFilenameFromUrl,
-        onStageChange: unwrapStatusObserverPayload((__, payload) => {
-          if (payload.type === 'uploaded' && payload.status === 'complete') {
+        onStageChange: unwrapStatusObserverPayload(
+          createStopStageObserverFn((_, payload) => {
             directUntagImages.set(payload.id, payload);
             imageAbortStore.delete(payload.id);
             unsubscribe();
-          }
-        }),
+          })
+        ),
       });
 
     const fetchStage = stageInitiator({ href: imageLink });
@@ -210,6 +224,7 @@ const AccomodationForm = () => {
             });
 
             resetField('photo');
+            break;
           } else {
             uploadStage.transit.failed();
             retryUpload = await retryAwaiter(
@@ -237,14 +252,15 @@ const AccomodationForm = () => {
     const [{ process: stageInitiator }, unsubscribe, retryAwaiter] =
       fromFileLoad({
         filename: file.name,
-        onStageChange: unwrapStatusObserverPayload((__, payload) => {
-          if (payload.type === 'uploaded' && payload.status === 'complete') {
+        onStageChange: unwrapStatusObserverPayload(
+          createStopStageObserverFn((_, payload) => {
             directUntagImages.set(payload.id, payload);
             imageAbortStore.delete(payload.id);
             unsubscribe();
-          }
-        }),
+          })
+        ),
       });
+
     const loadCompleteStage = stageInitiator().transit.complete({ data: file });
     const stageImageId = loadCompleteStage.current().id;
     const formData = new FormData();
@@ -283,6 +299,7 @@ const AccomodationForm = () => {
           return;
         }
         uploadStage.transit.complete({ serverImgInfo: data });
+        break;
       } else {
         uploadStage.transit.failed();
         retryUpload = await retryAwaiter(
@@ -294,6 +311,7 @@ const AccomodationForm = () => {
   }
 
   const resolveImageLink = (stage: RenderImage, id: string) => {
+    console.log(stage);
     if (
       (stage.type === 'fetching' &&
         stage.status == 'complete' &&
@@ -335,6 +353,7 @@ const AccomodationForm = () => {
         let retryFetch = false;
         while (!hasAttemptFetch || retryFetch) {
           hasAttemptFetch = true;
+
           const validFetchResponse = await fetch(serverImage.imgUrlPath, {
             signal: imageAbort.signal,
           });
@@ -345,13 +364,13 @@ const AccomodationForm = () => {
 
           if (validFetchResponse.ok) {
             serverInitStage.transit.complete();
+            break;
           } else {
             serverInitStage.transit.failed();
             retryFetch = await retryAwaiter(
               serverInitStage.current().id,
               imageAbort.signal
             );
-            debugger;
           }
         }
       });
@@ -509,7 +528,10 @@ const AccomodationForm = () => {
                   }}
                   setAsPlacePhotoTag={(id) => {
                     const stagedImage = getStageState(id);
-                    if (stagedImage && getstagedImageReadyStatus(stagedImage)) {
+                    if (
+                      stagedImage &&
+                      stageImageServerFinalizeStatus(stagedImage)
+                    ) {
                       const stagedImagePhotoId = getItemId(
                         stagedImage.type === 'fetching'
                           ? stagedImage.imageServer
@@ -525,7 +547,7 @@ const AccomodationForm = () => {
                       imageAbortStore.get(id)?.abort();
 
                       if (
-                        getstagedImageReadyStatus(stageImage) &&
+                        stageImageServerFinalizeStatus(stageImage) &&
                         unwrapServerStageResult(stageImage) === placePhotoTag
                       ) {
                         setPlacePhotoTag(null);

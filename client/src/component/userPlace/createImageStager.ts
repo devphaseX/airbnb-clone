@@ -191,6 +191,9 @@ function createImageStager(): ImageStager {
       if (retryStage && retryStage.status === 'waiting') {
         retryStage.status = 'settled';
 
+        const staged = entryOrder.get(id);
+        if (!(staged && staged.revert)) return resolve(false);
+        staged.revert();
         generalSubscriber.forEach((cb) => {
           cb(Array.from(entryOrder.values(), (entry) => entry.current()));
         });
