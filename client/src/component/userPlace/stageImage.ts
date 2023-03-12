@@ -286,14 +286,6 @@ function createFetchResourceStage(
                       id: processStage.id,
                       filename: option.filename!,
                     }),
-                  revert: () =>
-                    createFetchResourceStage({
-                      ...option,
-                      __: {
-                        preMadeOnStage: onStage,
-                        prevMadeOnMigrate: onMigrate,
-                      },
-                    }).process({ href }),
                 }
               )
             ),
@@ -365,14 +357,6 @@ function createLoadStage(
                         prevMadeOnMigrate: onMigrate,
                       },
                     }),
-                  revert: () =>
-                    createLoadStage({
-                      ...option,
-                      __: {
-                        preMadeOnStage: onStage,
-                        prevMadeOnMigrate: onMigrate,
-                      },
-                    }).process(),
                 }
               )
             ),
@@ -431,13 +415,6 @@ function createUploadStage(
                   serverImgInfo,
                   status: 'complete',
                 }),
-                revert: () =>
-                  createUploadStage({
-                    ...option,
-                    __: {
-                      preMadeOnStage: onStage,
-                    },
-                  }).process({ data }),
               }
             ),
 
@@ -473,20 +450,19 @@ type StageCreateFn<Entry extends StageImageEntry, RemoveKey extends string> = (
   option: CreateStageOption<Entry, RemoveKey>
 ) => StageImageResult<Entry>;
 
-type StatusObserverOption<Payload> = {
+type StageState<Payload, RevertPayload = Payload> = {
   current: () => Payload;
-  revert?: (
-    option?: CreateStageOptionTraitProps
-  ) => StatusObserverOption<Payload>;
+  revert?: (option?: CreateStageOptionTraitProps) => StageState<RevertPayload>;
 };
+
 type OnStageFn = (
   prev: RenderImage | null,
-  next: StatusObserverOption<RenderImage>
+  next: StageState<RenderImage>
 ) => void;
 function createStatusObserver(cb: OnStageFn) {
   return function observe<
     Payload extends RenderImage,
-    State extends StatusObserverOption<Payload>
+    State extends StageState<Payload>
   >(prevStage: null | RenderImage, stateV: State) {
     cb(prevStage, stateV);
     return stateV as any;
@@ -501,12 +477,11 @@ const unwrapStatusObserverPayload =
     cb(prev, payload.current());
   };
 
-type MigrateObserverOption<Payload, NextProgressStage> =
-  StatusObserverOption<Payload> & {
-    migrate: () => {
-      process: (args: any) => { current: () => NextProgressStage };
-    };
+type MigrateObserverOption<Payload, NextProgressStage> = StageState<Payload> & {
+  migrate: () => {
+    process: (args: any) => { current: () => NextProgressStage };
   };
+};
 
 function createMigrateObserver(cb: (oldStage: RenderImage) => void) {
   return function observe<
@@ -561,5 +536,5 @@ export type {
   GetStageFunctionPart,
   CreateStageOptionTraitProps,
   StageRevertBaseProcess,
-  StatusObserverOption,
+  StageState,
 };

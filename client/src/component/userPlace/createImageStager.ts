@@ -1,5 +1,7 @@
+import { getPromisePart } from '../../util';
 import { RenderImage } from './preview';
 import {
+  CreateStageOptionTraitProps,
   FetchExternalServerSigPart,
   FetchServerSigPart,
   LoadSigPart,
@@ -7,24 +9,35 @@ import {
   StageCreateFn,
   StageImageEntry,
   StageImageType,
-  StatusObserverOption,
+  StageState,
   _InternalDefStageKey,
   createFetchResourceStage,
   createFetchServerStage,
   createLoadStage,
 } from './stageImage';
 
-type StageMap = Map<
-  StageImageType,
-  Map<string, StatusObserverOption<RenderImage>>
->;
+type RetrySignalFn = (retry: boolean) => void;
+type StageMap = Map<StageImageType, Map<string, StageState<RenderImage>>>;
 type StageSubscriberStore = Map<string, Set<OnStageFn>>;
 type IdStageMap = Map<string, StageImageType>;
-type StageEntryOrderStore = Map<string, StatusObserverOption<RenderImage>>;
+type StageEntryOrderStore = Map<string, StageState<RenderImage>>;
+type RetrySignalStore = Map<
+  string,
+  {
+    retry: RetrySignalFn;
+    state: Promise<boolean>;
+    status: 'waiting' | 'settled';
+  }
+>;
 
 type Terminator = () => boolean;
 
-type ImageStagerResult<ProcessInitiator> = [ProcessInitiator, Terminator];
+type SignalAwaiterFn = (id: string, signal?: AbortSignal) => Promise<boolean>;
+type ImageStagerResult<ProcessInitiator> = [
+  ProcessInitiator,
+  Terminator,
+  SignalAwaiterFn
+];
 
 type ImageStager = {
   fromFileLoad: (option: LoadSigPart[0]) => ImageStagerResult<LoadSigPart[1]>;
@@ -42,9 +55,9 @@ type ImageStager = {
   ) => () => void;
 
   getStageState: (id: string) => RenderImage | null;
+  getRetryState: (id: string) => RetrySignalFn | null;
   stillActive: (id: string) => boolean;
   removeStage: (id: string) => boolean;
-  revertStage: (id: string) => boolean;
 };
 
 function createImageStager(): ImageStager {
@@ -54,6 +67,8 @@ function createImageStager(): ImageStager {
   const entryOrder: StageEntryOrderStore = new Map();
   const generalSubscriber: Set<Parameters<ImageStager['onStageChange']>[0]> =
     new Set();
+
+  const retrySignalStore: RetrySignalStore = new Map();
 
   const onStageChange: OnStageFn = (prev, next) => {
     const nextCurrent = next.current();
@@ -160,17 +175,49 @@ function createImageStager(): ImageStager {
           stageId && externalOnStage
             ? unsubscribe(stageId, externalOnStage)
             : false,
+
+        awaitRetrySignal,
       ];
     };
   }
 
-  function revertStage(id: string, onStage?: any) {
+  function awaitRetrySignal(id: string, signal?: AbortSignal) {
     const staged = entryOrder.get(id);
-    if (!(staged && staged.revert)) return false;
-    staged.revert();
-    if (!(stagerSubscribers.get(id) && onStage)) return false;
-    if (!stagerSubscribers.has(id)) subscribeStage(id, onStage);
-    return true;
+    if (!(staged && staged.revert)) return Promise.resolve(false);
+
+    const { promise, resolve } = getPromisePart<boolean>();
+    const retryFn: RetrySignalFn = (shouldRetry) => {
+      const retryStage = retrySignalStore.get(id);
+      if (retryStage && retryStage.status === 'waiting') {
+        retryStage.status = 'settled';
+
+        generalSubscriber.forEach((cb) => {
+          cb(Array.from(entryOrder.values(), (entry) => entry.current()));
+        });
+
+        Promise.resolve().then(() => {
+          resolve(shouldRetry);
+          retrySignalStore.delete(id);
+        });
+      }
+    };
+
+    signal?.addEventListener('abort', () => retryFn(false), { once: true });
+
+    retrySignalStore.set(id, {
+      retry: retryFn,
+      state: promise,
+      status: 'waiting',
+    });
+
+    return promise;
+  }
+
+  function getRetryState(id: string): RetrySignalFn | null {
+    const retryState = retrySignalStore.get(id);
+    if (!retryState) return null;
+    if (retryState.status === 'settled') return null;
+    return retryState.retry;
   }
 
   return {
@@ -183,7 +230,7 @@ function createImageStager(): ImageStager {
     getStageState: (id) => entryOrder.get(id)?.current() ?? null,
     stillActive: (id) => entryOrder.has(id),
     removeStage: remove,
-    revertStage,
+    getRetryState,
     onStageChange: (cb) => {
       generalSubscriber.add(cb);
       let hasUnsubscribed = false;

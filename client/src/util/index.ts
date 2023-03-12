@@ -37,6 +37,17 @@ function establishParentChildAbort(
   });
 }
 
+const getPromisePart = <T>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((_res, _rej) => {
+    resolve = _res;
+    reject = _rej;
+  });
+
+  return { promise, resolve, reject };
+};
+
 export {
   mergeStyleClassName,
   authRoutePattern,
@@ -46,4 +57,5 @@ export {
   inferUrlFileExt,
   getItemId,
   establishParentChildAbort,
+  getPromisePart,
 };

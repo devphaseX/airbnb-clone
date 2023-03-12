@@ -13,6 +13,7 @@ const useImageStage = () => {
     getStageState,
     stillActive,
     removeStage,
+    getRetryState,
   } = useRef(createImageStager()).current;
 
   const [data, setData] = useState(stageResults);
@@ -32,6 +33,7 @@ const useImageStage = () => {
       getStageState,
       stillActive,
       removeStage,
+      getRetryState,
     },
   ] as const;
 };

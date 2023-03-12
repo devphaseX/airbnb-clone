@@ -184,6 +184,7 @@ type DisplayImagePreviewProps = PreviewProp & {
     removePhoto: DisplayImagePreviewProps['removePhoto']
   ) => void;
   removePhoto: (imageId: string, shouldKeepFind?: boolean) => void;
+  retryStage?: () => void;
 };
 
 const DisplayImagePreview = ({
@@ -205,6 +206,7 @@ const ImagePreviewStageLoader = ({
   resolveImageLink,
   setAsPlacePhotoTag,
   removePhoto,
+  retryStage,
 }: ImagePreviewStageLoaderProps) => {
   const qualifyForPreview = canPreviewStageImage(staged);
   const url = resolveImageLink(staged, staged.id);
@@ -226,11 +228,21 @@ const ImagePreviewStageLoader = ({
   }
 
   if (isFailedFetch) {
-    return <div>Fetch Failed</div>;
+    return (
+      <div style={{ fontSize: '1.6rem' }}>
+        <span>Fetch Failed</span>
+        {retryStage ? <span onClick={retryStage}>Retry</span> : null}
+      </div>
+    );
   }
 
   if (isFailedUpload) {
-    return <div>Failed to upload</div>;
+    return (
+      <div>
+        <span>Failed to upload</span>
+        <span>Retry</span>
+      </div>
+    );
   }
 
   if (isProcessingUpload) {
@@ -239,7 +251,7 @@ const ImagePreviewStageLoader = ({
 
   return isStagedLoaded || qualifyForPreview ? (
     <div className="complete-preview">
-      <img src={url} alt={staged.filename} loading="lazy" />
+      <img src={url} alt={staged.filename} />
       <div className="task">
         <span
           onClick={() => {

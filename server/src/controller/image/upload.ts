@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { RequestHandler } from 'express';
 import multer from 'multer';
-import { Image, ImageDoc, placeCreateDocSchema } from '../../model';
+import { Image, ImageDoc } from '../../model';
 import { imageSchema } from '../../model/image/image.zod.schema';
 
 const memoryStore = multer.memoryStorage();

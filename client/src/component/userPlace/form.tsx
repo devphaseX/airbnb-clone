@@ -87,6 +87,7 @@ const AccomodationForm = () => {
       fromFileLoad,
       stillActive,
       removeStage,
+      getRetryState,
     },
   ] = useImageStage();
 
@@ -125,78 +126,105 @@ const AccomodationForm = () => {
     if (!imageLink) return;
 
     const imageFilenameFromUrl = inferImagename(imageLink);
-    const [{ process: stageInitiator }, unsubscribe] = fromExternalServerFetch({
-      filename: imageFilenameFromUrl,
-      onStageChange: unwrapStatusObserverPayload((__, payload) => {
-        if (payload.type === 'uploaded' && payload.status === 'complete') {
-          directUntagImages.set(payload.id, payload);
-          imageAbortStore.delete(payload.id);
-          unsubscribe();
-        }
-      }),
-    });
+    const [{ process: stageInitiator }, unsubscribe, retryAwaiter] =
+      fromExternalServerFetch({
+        filename: imageFilenameFromUrl,
+        onStageChange: unwrapStatusObserverPayload((__, payload) => {
+          if (payload.type === 'uploaded' && payload.status === 'complete') {
+            directUntagImages.set(payload.id, payload);
+            imageAbortStore.delete(payload.id);
+            unsubscribe();
+          }
+        }),
+      });
 
     const fetchStage = stageInitiator({ href: imageLink });
     const stageImageId = getItemId(fetchStage.current());
     await sleep(500);
     const imageAbortCtrl = createRegisterAborter(stageImageId);
+
     const validFetchResponse = await fetch(imageLink, {
       signal: imageAbortCtrl.signal,
     });
 
-    if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) return;
+    let retryFetch = false;
+    let hasAttemptFetch = false;
 
-    if (validFetchResponse.ok && !imageAbortCtrl.signal.aborted) {
-      const namedImageFile = new File(
-        [await validFetchResponse.blob()],
-        imageFilenameFromUrl,
-        {
-          type: `image/${inferUrlFileExt(imageFilenameFromUrl)}`,
-        }
-      );
-
-      const completeFetchStage = fetchStage.transit.complete({
-        data: namedImageFile,
-      });
-
-      await sleep(1500);
-
+    while (!hasAttemptFetch || retryFetch) {
       if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId))
         return;
 
-      const formData = new FormData();
-      formData.set('image', namedImageFile);
-      const uploadStage = completeFetchStage
-        .migrate()
-        .process({ data: completeFetchStage.current().data });
+      hasAttemptFetch = true;
 
-      const uploadRes = await fetchFn((baseUrl) =>
-        fetch(`${baseUrl}/upload`, {
-          method: 'POST',
-          body: formData,
-          signal: imageAbortCtrl.signal,
-        })
-      )();
+      if (validFetchResponse.ok && !imageAbortCtrl.signal.aborted) {
+        const namedImageFile = new File(
+          [await validFetchResponse.blob()],
+          imageFilenameFromUrl,
+          {
+            type: `image/${inferUrlFileExt(imageFilenameFromUrl)}`,
+          }
+        );
 
-      await sleep(1000);
-      if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId))
-        return;
-
-      if (uploadRes.ok && !imageAbortCtrl.signal.aborted) {
-        const data = await uploadRes.json();
-        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
-          return;
-        }
-        uploadStage.transit.complete({
-          serverImgInfo: data,
+        const completeFetchStage = fetchStage.transit.complete({
+          data: namedImageFile,
         });
 
-        resetField('photo');
+        await sleep(1500);
+
+        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId))
+          return;
+
+        const formData = new FormData();
+        formData.set('image', namedImageFile);
+        const uploadStage = completeFetchStage
+          .migrate()
+          .process({ data: completeFetchStage.current().data });
+
+        const uploadRes = await fetchFn((baseUrl) =>
+          fetch(`${baseUrl}/upload`, {
+            method: 'POST',
+            body: formData,
+            signal: imageAbortCtrl.signal,
+          })
+        )();
+
+        await sleep(1000);
+        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId))
+          return;
+
+        let hasAttemptUpload = false;
+        let retryUpload = false;
+
+        while (!hasAttemptUpload || retryUpload) {
+          if (uploadRes.ok && !imageAbortCtrl.signal.aborted) {
+            hasAttemptUpload = true;
+            const data = await uploadRes.json();
+            if (
+              navigateAbortCtrl.signal.aborted ||
+              !stillActive(stageImageId)
+            ) {
+              return;
+            }
+            uploadStage.transit.complete({
+              serverImgInfo: data,
+            });
+
+            resetField('photo');
+          } else {
+            uploadStage.transit.failed();
+            retryUpload = await retryAwaiter(
+              uploadStage.current().id,
+              imageAbortCtrl.signal
+            );
+          }
+        }
       } else {
-        uploadStage.transit.failed();
+        fetchStage.transit.failed();
+        retryFetch = await retryAwaiter(
+          fetchStage.current().id,
+          imageAbortCtrl.signal
+        );
       }
-    } else {
-      fetchStage.transit.failed();
     }
   }
 
@@ -206,19 +234,19 @@ const AccomodationForm = () => {
     const [file] = target.files ?? [];
     if (!file) return;
 
-    const [{ process: stageInitiator }, unsubscribe] = fromFileLoad({
-      filename: file.name,
-      onStageChange: unwrapStatusObserverPayload((__, payload) => {
-        if (payload.type === 'uploaded' && payload.status === 'complete') {
-          directUntagImages.set(payload.id, payload);
-          imageAbortStore.delete(payload.id);
-          unsubscribe();
-        }
-      }),
-    });
+    const [{ process: stageInitiator }, unsubscribe, retryAwaiter] =
+      fromFileLoad({
+        filename: file.name,
+        onStageChange: unwrapStatusObserverPayload((__, payload) => {
+          if (payload.type === 'uploaded' && payload.status === 'complete') {
+            directUntagImages.set(payload.id, payload);
+            imageAbortStore.delete(payload.id);
+            unsubscribe();
+          }
+        }),
+      });
     const loadCompleteStage = stageInitiator().transit.complete({ data: file });
     const stageImageId = loadCompleteStage.current().id;
-
     const formData = new FormData();
     formData.set('image', file);
     await sleep(1500);
@@ -231,27 +259,37 @@ const AccomodationForm = () => {
       .process({ data: loadCompleteStage.current().data });
 
     const imageAbort = createRegisterAborter(stageImageId);
-    const uploadResponse = (await uploadImage(
-      formData,
-      imageAbort.signal
-    )) as Response & AxiosResponse;
+    let hasAttemptUpload = false;
+    let retryUpload = false;
 
-    await sleep(1500);
-    if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
-      return;
-    }
+    while (!hasAttemptUpload || retryUpload) {
+      hasAttemptUpload = true;
+      const uploadResponse = (await uploadImage(
+        formData,
+        imageAbort.signal
+      )) as Response & AxiosResponse;
 
-    if (
-      !imageAbort.signal.aborted &&
-      (uploadResponse.ok || uploadResponse.data)
-    ) {
-      const data = uploadResponse.data ?? (await uploadResponse.json());
+      await sleep(1500);
       if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
         return;
       }
-      uploadStage.transit.complete({ serverImgInfo: data });
-    } else {
-      uploadStage.transit.failed();
+
+      if (
+        !imageAbort.signal.aborted &&
+        (uploadResponse.ok || uploadResponse.data)
+      ) {
+        const data = uploadResponse.data ?? (await uploadResponse.json());
+        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
+          return;
+        }
+        uploadStage.transit.complete({ serverImgInfo: data });
+      } else {
+        uploadStage.transit.failed();
+        retryUpload = await retryAwaiter(
+          uploadStage.current().id,
+          imageAbort.signal
+        );
+      }
     }
   }
 
@@ -279,7 +317,9 @@ const AccomodationForm = () => {
   useEffect(() => {
     if (data !== NO_EDIT_MODE) {
       photos.forEach(async (serverImage) => {
-        const [{ process: stageInitiator }] = fromServerFetch({});
+        const [{ process: stageInitiator }, _, retryAwaiter] = fromServerFetch(
+          {}
+        );
         const serverInitStage = stageInitiator({ imageServer: serverImage });
         const stageImageId = serverInitStage.current().id;
 
@@ -290,18 +330,29 @@ const AccomodationForm = () => {
         }
 
         const imageAbort = createRegisterAborter(stageImageId);
-        const validFetchResponse = await fetch(serverImage.imgUrlPath, {
-          signal: imageAbort.signal,
-        });
 
-        if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
-          return;
-        }
+        let hasAttemptFetch = false;
+        let retryFetch = false;
+        while (!hasAttemptFetch || retryFetch) {
+          hasAttemptFetch = true;
+          const validFetchResponse = await fetch(serverImage.imgUrlPath, {
+            signal: imageAbort.signal,
+          });
 
-        if (validFetchResponse.ok) {
-          serverInitStage.transit.complete();
-        } else {
-          serverInitStage.transit.failed();
+          if (navigateAbortCtrl.signal.aborted || !stillActive(stageImageId)) {
+            return;
+          }
+
+          if (validFetchResponse.ok) {
+            serverInitStage.transit.complete();
+          } else {
+            serverInitStage.transit.failed();
+            retryFetch = await retryAwaiter(
+              serverInitStage.current().id,
+              imageAbort.signal
+            );
+            debugger;
+          }
         }
       });
     }
@@ -451,6 +502,11 @@ const AccomodationForm = () => {
                 <DisplayImagePreview
                   staged={staged}
                   resolveImageLink={resolveImageLink}
+                  retryStage={() => {
+                    const retryFn = getRetryState(getItemId(staged));
+                    if (!retryFn) return;
+                    retryFn(true);
+                  }}
                   setAsPlacePhotoTag={(id) => {
                     const stagedImage = getStageState(id);
                     if (stagedImage && getstagedImageReadyStatus(stagedImage)) {
@@ -474,6 +530,9 @@ const AccomodationForm = () => {
                       ) {
                         setPlacePhotoTag(null);
                       }
+                      const retryFn = getRetryState(getItemId(staged));
+                      if (!retryFn) return;
+                      retryFn(false);
                     }
                   }}
                   key={staged.id}
