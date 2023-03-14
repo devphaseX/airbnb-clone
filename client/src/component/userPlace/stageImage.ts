@@ -209,11 +209,12 @@ function createFetchServerStage(
       return {
         current,
         transit: {
-          complete: () =>
+          complete: ({ data }) =>
             onStage(null, {
               current: () => ({
                 ...processStage,
                 status: 'complete',
+                data,
               }),
             }),
           failed: () =>

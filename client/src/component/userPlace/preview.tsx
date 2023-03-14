@@ -32,6 +32,7 @@ interface FetchServerFailedImage extends FetchServerImage {
 
 interface FetchServerCompleteImage extends FetchServerImage {
   status: 'complete';
+  data: File | Blob;
 }
 
 interface FetchImageResourceBase extends FetchImageBase {

@@ -1,7 +1,7 @@
 import { useQueryClient } from 'react-query';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
+import { useLoaderData, useOutletContext } from 'react-router-dom';
 import './style.css';
 import { useState } from 'react';
 import {
@@ -34,6 +34,7 @@ import { AccountOutletContext } from '../../pages';
 import { useImageDelete } from '../../store/mutation/deleteImage';
 import { useImageStage } from '../../hooks/useImageStage';
 import { OnStageResultFn, unwrapStatusObserverPayload } from './stageImage';
+import { useBlockLink, useBlockLinkNavigate } from '../BlockableLink/lock';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -88,7 +89,7 @@ const AccomodationForm = () => {
   const imageAbortStore = useRef(new Map<string, AbortController>()).current;
   const createPlace = useCreatePlace();
   const { basePath, beforeNowPath } = useOutletContext<AccountOutletContext>();
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
   const queryClient = useQueryClient();
   const deleteImageMutation = useImageDelete();
   const componentIsUmount = useRef(false);
@@ -105,6 +106,23 @@ const AccomodationForm = () => {
     },
   ] = useImageStage();
 
+  const [_, { blockWithReleaseRequest, greedyBlock }] = useBlockLink();
+  const routeBlockReleaser = useRef<(() => void) | null>(null);
+  function confirmNavBlock() {
+    if (window && window.confirm('Your data will be lost if you accept.'))
+      return true;
+    return false;
+  }
+
+  useEffect(() => {
+    routeBlockReleaser.current?.();
+    if (createPlace.isLoading || deleteImageMutation.isLoading) {
+      routeBlockReleaser.current = greedyBlock();
+    } else if (!(createPlace.isLoading || deleteImageMutation.isLoading)) {
+      routeBlockReleaser.current = blockWithReleaseRequest(confirmNavBlock);
+    }
+  }, [createPlace.isLoading, deleteImageMutation.isLoading]);
+
   const getUnclaimedImage = (
     photos: Array<ImageUploadComplete['serverImgInfo']>,
     notSubmitted = false
@@ -116,13 +134,13 @@ const AccomodationForm = () => {
 
   const createRegisterAborter = useCallback(
     function createRegisterAborter(id: string) {
-      const controller = new AbortController();
-      establishParentChildAbort(navigateAbortCtrl, controller);
-      const childAbort = controller.abort.bind(controller);
+      const stageImageController = new AbortController();
+      establishParentChildAbort(navigateAbortCtrl, stageImageController);
+      const childAbort = stageImageController.abort.bind(stageImageController);
 
-      imageAbortStore.set(id, controller);
+      imageAbortStore.set(id, stageImageController);
 
-      controller.abort = () => {
+      navigateAbortCtrl.abort = () => {
         const currentStage = getStageState(id);
         if (currentStage) {
           removeStage(id);
@@ -130,7 +148,18 @@ const AccomodationForm = () => {
         }
       };
 
-      return controller;
+      stageImageController.signal.addEventListener(
+        'abort',
+        () => {
+          const retryFn = getRetryState(id);
+          if (!retryFn) return;
+          retryFn(false);
+        },
+        {
+          once: true,
+        }
+      );
+      return stageImageController;
     },
     [navigateAbortCtrl, stageImages]
   );
@@ -311,11 +340,8 @@ const AccomodationForm = () => {
   }
 
   const resolveImageLink = (stage: RenderImage, id: string) => {
-    console.log(stage);
     if (
-      (stage.type === 'fetching' &&
-        stage.status == 'complete' &&
-        !('imageServer' in stage)) ||
+      (stage.type === 'fetching' && stage.status == 'complete') ||
       (stage.type === 'loaded' && stage.status === 'complete') ||
       stage.type === 'uploaded'
     ) {
@@ -363,7 +389,9 @@ const AccomodationForm = () => {
           }
 
           if (validFetchResponse.ok) {
-            serverInitStage.transit.complete();
+            serverInitStage.transit.complete({
+              data: await validFetchResponse.blob(),
+            });
             break;
           } else {
             serverInitStage.transit.failed();
@@ -466,7 +494,7 @@ const AccomodationForm = () => {
                 await queryClient.invalidateQueries(['places']);
               }
               hasSubmitForm.current = true;
-              return navigate(`/${basePath}/${beforeNowPath}`);
+              return navigate({ to: `/${basePath}/${beforeNowPath}` });
             } else {
               //report an issue submitting the form
             }
@@ -552,9 +580,6 @@ const AccomodationForm = () => {
                       ) {
                         setPlacePhotoTag(null);
                       }
-                      const retryFn = getRetryState(getItemId(staged));
-                      if (!retryFn) return;
-                      retryFn(false);
                     }
                   }}
                   key={staged.id}

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import './style.css';
 import { mergeStyleClassName } from '../../util';
 import { expandedFooterLink } from './links';
 import { World } from '../../ui/icon/world';
 import cancelIcon from '../../assets/cancel.svg';
+import { BlockableLink } from '../BlockableLink';
 
 const Footer = () => {
   const [collapse, setCollapse] = useState(true);
@@ -108,7 +108,9 @@ const FooterExpanded = ({ setCollapse, collapse }: FooterExpandedProps) => (
                           {linkType.name}
                         </a>
                       ) : (
-                        <Link to={linkType.path}>{linkType.name}</Link>
+                        <BlockableLink to={linkType.path}>
+                          {linkType.name}
+                        </BlockableLink>
                       )}
                     </li>
                   ))}

@@ -1,5 +1,4 @@
 import {
-  Link,
   LoaderFunctionArgs,
   redirect,
   useOutletContext,
@@ -10,7 +9,7 @@ import { getItemId } from '../../util';
 import { AccountOutletContext } from '../../pages';
 import { fetchFn } from '../../store/api/baseUrl';
 import './style.user.place.css';
-
+import { BlockableLink } from '../BlockableLink';
 const ShowUserAccomodation = () => {
   const { data } = usePlacesQuery({ withCredentials: true });
 
@@ -30,7 +29,7 @@ const UserAccomodationItem = ({ item }: UserAccomodationItemProps) => {
   const { basePath, beforeNowPath } = useOutletContext<AccountOutletContext>();
 
   return (
-    <Link
+    <BlockableLink
       className="user-place"
       to={`/${basePath}/${beforeNowPath}/${getItemId(item)}`}
     >
@@ -41,7 +40,7 @@ const UserAccomodationItem = ({ item }: UserAccomodationItemProps) => {
         <h4>{title}</h4>
         <p>{description}</p>
       </div>
-    </Link>
+    </BlockableLink>
   );
 };
 

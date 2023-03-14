@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { BlockableLink } from '../../component/BlockableLink';
 import { ServerAccomodationData } from '../../component/userPlace/form';
 import { getItemId } from '../../util';
 import './style.css';
@@ -13,7 +13,7 @@ type CardProps = Required<
 const Card = (props: CardProps) => {
   const { title, address, photoTag, description, price } = props;
   return (
-    <Link to={`/place/${getItemId(props)}`}>
+    <BlockableLink to={`/place/${getItemId(props)}`}>
       <div className="card">
         <div className="card__img">
           <img src={photoTag.imgUrlPath} alt={title} />
@@ -24,7 +24,7 @@ const Card = (props: CardProps) => {
         </div>
         <div className="card__price">${price} per night</div>
       </div>
-    </Link>
+    </BlockableLink>
   );
 };
 

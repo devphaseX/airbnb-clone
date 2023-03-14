@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import airbnbLogo from '../../assets/logo.svg';
 import './style.css';
 import { Menu } from '../../ui/icon/menu';
@@ -8,17 +8,24 @@ import { MenuList } from '../../ui/menuList';
 import { useState } from 'react';
 import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
+import { BlockableLink } from '../BlockableLink';
+import { useBlockLinkNavigate } from '../BlockableLink/lock';
 
 const Header = () => {
   const [openMenuList, setOpenMenuList] = useState(false);
   const pathname = useLocation().pathname;
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
   const shouldOmitSearch = /^[/]?(?:login|signup)/.test(pathname);
   const user = useStore(clientInfoStore, (state) => state.user);
   return (
     <header className="header">
       <div className="header-wrapper section-wrapper">
-        <div className="logo-wrapper" onClick={() => navigate('/')}>
+        <div
+          className="logo-wrapper"
+          onClick={() => {
+            navigate({ to: '/' });
+          }}
+        >
           <span>
             <img src={airbnbLogo} alt="website logo" />
             <p>airbnb</p>
@@ -64,13 +71,16 @@ const Header = () => {
             >
               <Menu />
             </span>
-            <Link to={user ? '/account' : '/verify'} className="person">
+            <BlockableLink
+              to={user ? '/account' : '/verify'}
+              className="person"
+            >
               <span className="person-icon">
                 <Person />
               </span>
 
               {user ? <p>{`${user.firstName} ${user.lastName}`}</p> : null}
-            </Link>
+            </BlockableLink>
           </span>
           <div
             className="menu-list-wrapper"

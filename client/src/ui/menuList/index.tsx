@@ -1,10 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { createStore, useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
 import { logoutUserApi } from '../../store/api';
 import './style.css';
 import { Backdrop } from '../backdrop';
 import { useLayoutEffect } from 'react';
+import { useBlockLinkNavigate } from '../../component/BlockableLink/lock';
 
 type CloseMenuList = {
   status: 'open' | 'closed';
@@ -30,7 +31,7 @@ type MenuListProps = { open: boolean; close: () => void };
 
 const MenuList = ({ close, open }: MenuListProps) => {
   const { user, resetUser } = useStore(clientInfoStore);
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
   const { status, setStatus } = useStore(closeMenuList);
 
   useLayoutEffect(() => {
@@ -62,7 +63,7 @@ const MenuList = ({ close, open }: MenuListProps) => {
               const response = await logoutUserApi();
               if (response.ok) {
                 resetUser();
-                navigate('/');
+                navigate({ to: '/' });
               }
             }}
           >

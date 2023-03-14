@@ -75,4 +75,4 @@ const PageRoute = () => {
   return <RouterProvider router={router} />;
 };
 
-export { PageRoute };
+export { PageRoute, router };

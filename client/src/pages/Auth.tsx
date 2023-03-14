@@ -23,6 +23,7 @@ import {
 } from '../store/api/baseUrl';
 import { userSession } from '../component/layout/ReAuthUser';
 import backChevronIcon from '../assets/chevron.svg';
+import { useBlockLinkNavigate } from '../component/BlockableLink/lock';
 
 type AuthStep = 'verify' | 'password' | 'register';
 
@@ -52,7 +53,7 @@ const Authenicate = () => {
   const { pathname } = useLocation();
   const { email, resetEmail } = useStore(lockEmailStore);
   const { resetPath } = useStore(preAuthPageStore);
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
 
   useEffect(() => {
     return () => {
@@ -71,13 +72,13 @@ const Authenicate = () => {
 
     //reflect the path to signup when the register component is displayed.
     if (authStep === 'register' && path !== 'signup') {
-      navigate('/signup');
+      navigate({ to: '/signup' });
       //reflect the path to login when user is verified to have opened an account.
     } else if (authStep === 'password' && path === 'verify') {
-      navigate('/login');
+      navigate({ to: '/login' });
       //revert an change in route if user is currently viewing the verify page and route does not match
     } else if (authStep === 'verify' && path !== 'verify') {
-      navigate('/verify');
+      navigate({ to: '/verify' });
     }
   }, [authStep]);
 
@@ -154,7 +155,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const { email, setEmail } = useStore(lockEmailStore);
   const { path } = useStore(preAuthPageStore);
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
   const { pathname } = useLocation();
   const emailId = `email:${useId()}`;
   const passwordId = `password:${useId()}`;
@@ -203,7 +204,7 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
               if (response.ok) {
                 const user = (await response.json()).data;
                 setUser(user);
-                navigate(path);
+                navigate({ to: path });
               } else {
                 //report that there is an issue signing them in
               }

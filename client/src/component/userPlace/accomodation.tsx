@@ -1,18 +1,19 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Plus } from '../../ui/icon/plus';
 import { ShowUserAccomodation } from './showUserAccomodation';
 import './showUserAccomodation';
+import { useBlockLinkNavigate } from '../BlockableLink/lock';
 
 const UserAccomodation = () => {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const navigate = useBlockLinkNavigate();
 
   return (
     <div className="new-accomodation">
       <div className="accomodation-list">
         <button
           className="add-new-button"
-          onClick={() => navigate(`${pathname}/new`)}
+          onClick={() => navigate({ to: `${pathname}/new` })}
         >
           <span className="add-button-icon">
             <Plus />
