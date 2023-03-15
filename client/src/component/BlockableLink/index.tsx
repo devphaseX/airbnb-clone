@@ -1,5 +1,5 @@
 import { Link, LinkProps, useNavigate } from 'react-router-dom';
-import { useBlockLink } from './lock';
+import { useBlockLink } from '../../hooks/useBlockLink';
 
 interface BlockableLinkProps extends LinkProps {}
 
@@ -11,6 +11,9 @@ const BlockableLink: React.FC<BlockableLinkProps> = ({ children, ...rest }) => {
       onClickCapture={(event) => {
         if (getBlockStatus()) {
           event.stopPropagation();
+          if (event.cancelable && !event.defaultPrevented) {
+            event.preventDefault();
+          }
 
           requestUnBlock(() => {
             navigate(rest.to, {
@@ -20,8 +23,6 @@ const BlockableLink: React.FC<BlockableLinkProps> = ({ children, ...rest }) => {
               preventScrollReset: rest.preventScrollReset,
             });
           });
-
-          event.preventDefault();
         }
       }}
     >

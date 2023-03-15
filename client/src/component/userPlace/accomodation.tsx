@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus } from '../../ui/icon/plus';
 import { ShowUserAccomodation } from './showUserAccomodation';
 import './showUserAccomodation';
-import { useBlockLinkNavigate } from '../BlockableLink/lock';
+import { useBlockLinkNavigate } from '../../hooks/useBlockLink';
 
 const UserAccomodation = () => {
   const { pathname } = useLocation();

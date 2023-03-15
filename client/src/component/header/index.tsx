@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
 import { BlockableLink } from '../BlockableLink';
-import { useBlockLinkNavigate } from '../BlockableLink/lock';
+import { useBlockLinkNavigate } from '../../hooks/useBlockLink';
 
 const Header = () => {
   const [openMenuList, setOpenMenuList] = useState(false);

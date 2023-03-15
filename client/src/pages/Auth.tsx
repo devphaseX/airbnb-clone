@@ -23,7 +23,7 @@ import {
 } from '../store/api/baseUrl';
 import { userSession } from '../component/layout/ReAuthUser';
 import backChevronIcon from '../assets/chevron.svg';
-import { useBlockLinkNavigate } from '../component/BlockableLink/lock';
+import { useBlockLinkNavigate } from '../hooks/useBlockLink';
 
 type AuthStep = 'verify' | 'password' | 'register';
 

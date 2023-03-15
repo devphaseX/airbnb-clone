@@ -5,7 +5,7 @@ import { logoutUserApi } from '../../store/api';
 import './style.css';
 import { Backdrop } from '../backdrop';
 import { useLayoutEffect } from 'react';
-import { useBlockLinkNavigate } from '../../component/BlockableLink/lock';
+import { useBlockLinkNavigate } from '../../hooks/useBlockLink';
 
 type CloseMenuList = {
   status: 'open' | 'closed';

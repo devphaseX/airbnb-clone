@@ -34,7 +34,7 @@ import { AccountOutletContext } from '../../pages';
 import { useImageDelete } from '../../store/mutation/deleteImage';
 import { useImageStage } from '../../hooks/useImageStage';
 import { OnStageResultFn, unwrapStatusObserverPayload } from './stageImage';
-import { useBlockLink, useBlockLinkNavigate } from '../BlockableLink/lock';
+import { useBlockLink, useBlockLinkNavigate } from '../../hooks/useBlockLink';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -106,7 +106,7 @@ const AccomodationForm = () => {
     },
   ] = useImageStage();
 
-  const [_, { blockWithReleaseRequest, greedyBlock }] = useBlockLink();
+  const [_, { lazyBlock, greedyBlock }] = useBlockLink();
   const routeBlockReleaser = useRef<(() => void) | null>(null);
   function confirmNavBlock() {
     if (window && window.confirm('Your data will be lost if you accept.'))
@@ -119,7 +119,7 @@ const AccomodationForm = () => {
     if (createPlace.isLoading || deleteImageMutation.isLoading) {
       routeBlockReleaser.current = greedyBlock();
     } else if (!(createPlace.isLoading || deleteImageMutation.isLoading)) {
-      routeBlockReleaser.current = blockWithReleaseRequest(confirmNavBlock);
+      routeBlockReleaser.current = lazyBlock(confirmNavBlock);
     }
   }, [createPlace.isLoading, deleteImageMutation.isLoading]);
 
@@ -494,6 +494,7 @@ const AccomodationForm = () => {
                 await queryClient.invalidateQueries(['places']);
               }
               hasSubmitForm.current = true;
+              routeBlockReleaser.current?.();
               return navigate({ to: `/${basePath}/${beforeNowPath}` });
             } else {
               //report an issue submitting the form
