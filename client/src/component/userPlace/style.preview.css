@@ -17,3 +17,21 @@
   padding: 2px;
   color: #fff;
 }
+
+.loading {
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.retry-icon {
+  width: 48px;
+  height: 48px;
+  color: #999999;
+  transition: color 300ms ease-in;
+}
+
+.retry-icon:hover {
+  color: #202020;
+}

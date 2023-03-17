@@ -32,7 +32,14 @@ type RetrySignalStore = Map<
 
 type Terminator = () => boolean;
 
-type SignalAwaiterFn = (id: string, signal?: AbortSignal) => Promise<boolean>;
+type SignAwaiterFnOption = {
+  signal?: AbortSignal;
+  waitAfterRetry?: number | Promise<void>;
+};
+type SignalAwaiterFn = (
+  id: string,
+  option?: SignAwaiterFnOption
+) => Promise<boolean>;
 type ImageStagerResult<ProcessInitiator> = [
   ProcessInitiator,
   Terminator,
@@ -181,9 +188,10 @@ function createImageStager(): ImageStager {
     };
   }
 
-  function awaitRetrySignal(id: string, signal?: AbortSignal) {
+  function awaitRetrySignal(id: string, option?: SignAwaiterFnOption) {
     const staged = entryOrder.get(id);
     if (!(staged && staged.revert)) return Promise.resolve(false);
+    const { signal, waitAfterRetry } = option ?? {};
 
     const { promise, resolve } = getPromisePart<boolean>();
     const retryFn: RetrySignalFn = (shouldRetry) => {
@@ -205,7 +213,9 @@ function createImageStager(): ImageStager {
       }
     };
 
-    signal?.addEventListener('abort', () => retryFn(false), { once: true });
+    signal?.addEventListener('abort', () => retryFn(false), {
+      once: true,
+    });
 
     retrySignalStore.set(id, {
       retry: retryFn,
@@ -213,6 +223,30 @@ function createImageStager(): ImageStager {
       status: 'waiting',
     });
 
+    if (
+      typeof waitAfterRetry === 'number' ||
+      (typeof waitAfterRetry === 'object' &&
+        typeof waitAfterRetry.then === 'function')
+    ) {
+      return promise
+        .then(() => {
+          let timerPromise: Promise<void>;
+
+          if (typeof waitAfterRetry === 'number') {
+            const { promise, resolve } = getPromisePart<void>();
+
+            setTimeout(() => {
+              resolve();
+            }, waitAfterRetry);
+            timerPromise = promise;
+          } else {
+            timerPromise = waitAfterRetry;
+          }
+
+          return timerPromise;
+        })
+        .then(() => promise);
+    }
     return promise;
   }
 

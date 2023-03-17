@@ -256,18 +256,18 @@ const AccomodationForm = () => {
             break;
           } else {
             uploadStage.transit.failed();
-            retryUpload = await retryAwaiter(
-              uploadStage.current().id,
-              imageAbortCtrl.signal
-            );
+            retryUpload = await retryAwaiter(uploadStage.current().id, {
+              signal: imageAbortCtrl.signal,
+              waitAfterRetry: 500,
+            });
           }
         }
       } else {
         fetchStage.transit.failed();
-        retryFetch = await retryAwaiter(
-          fetchStage.current().id,
-          imageAbortCtrl.signal
-        );
+        retryFetch = await retryAwaiter(fetchStage.current().id, {
+          signal: imageAbortCtrl.signal,
+          waitAfterRetry: 500,
+        });
       }
     }
   }
@@ -331,10 +331,10 @@ const AccomodationForm = () => {
         break;
       } else {
         uploadStage.transit.failed();
-        retryUpload = await retryAwaiter(
-          uploadStage.current().id,
-          imageAbort.signal
-        );
+        retryUpload = await retryAwaiter(uploadStage.current().id, {
+          signal: imageAbort.signal,
+          waitAfterRetry: 500,
+        });
       }
     }
   }
@@ -395,10 +395,10 @@ const AccomodationForm = () => {
             break;
           } else {
             serverInitStage.transit.failed();
-            retryFetch = await retryAwaiter(
-              serverInitStage.current().id,
-              imageAbort.signal
-            );
+            retryFetch = await retryAwaiter(serverInitStage.current().id, {
+              signal: imageAbort.signal,
+              waitAfterRetry: 500,
+            });
           }
         }
       });
@@ -611,7 +611,7 @@ const AccomodationForm = () => {
                     stroke="currentColor"
                     strokeWidth={1.5}
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     aria-hidden="true"
                   >
                     <path
@@ -634,7 +634,7 @@ const AccomodationForm = () => {
               <label htmlFor="park">
                 <span>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -661,7 +661,7 @@ const AccomodationForm = () => {
               <label htmlFor="tv">
                 <span>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -688,7 +688,7 @@ const AccomodationForm = () => {
               <label htmlFor="radio">
                 <span>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -715,7 +715,7 @@ const AccomodationForm = () => {
               <label htmlFor="pet">
                 <span>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -742,7 +742,7 @@ const AccomodationForm = () => {
               <label htmlFor="entrance">
                 <span>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/500/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
