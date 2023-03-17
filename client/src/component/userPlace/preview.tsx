@@ -226,7 +226,7 @@ const ImagePreviewStageLoader = ({
   const isFailedUpload = _isStagedUpload && staged.status === 'failed';
 
   let stagedImageAction: React.ReactNode | null;
-  if (_isStagedFetch) {
+  if (isProcessingFetch) {
     stagedImageAction = null;
   } else {
     stagedImageAction = (
@@ -276,6 +276,8 @@ const ImagePreviewStageLoader = ({
     );
   }
 
+  console.log(stagedImageAction);
+
   if (isProcessingFetch) {
     //show loading skeleton
     return (
@@ -313,13 +315,11 @@ const ImagePreviewStageLoader = ({
   return isStagedLoaded || qualifyForPreview ? (
     <div className="stage-preview complete-preview">
       <img src={url} alt={staged.filename} />
-
       {isProcessingUpload ? (
         <div className="upload-icon center-progress">
           <ProgressBar />
         </div>
       ) : null}
-
       {stagedImageAction}
     </div>
   ) : null;
@@ -353,21 +353,3 @@ export type {
   FileLoadImageComplete,
   FileLoadImageFail,
 };
-
-/* 
-
-solid cancel icon
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
-</svg>
-
-
-*/
-
-/* 
-bin icon
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-</svg>
-
-*/
