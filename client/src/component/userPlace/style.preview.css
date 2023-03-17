@@ -1,8 +1,8 @@
-.complete-preview {
+.stage-preview {
   position: relative;
 }
 
-.complete-preview .task {
+.stage-preview .task {
   position: absolute;
   bottom: 10px;
   left: 0;
@@ -34,4 +34,32 @@
 
 .retry-icon:hover {
   color: #202020;
+}
+
+.action-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.center-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.upload-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.upload-icon svg path:first-of-type {
+  stroke: black;
+}
+
+.upload-icon svg path:nth-of-type(2) {
+  fill: black;
 }

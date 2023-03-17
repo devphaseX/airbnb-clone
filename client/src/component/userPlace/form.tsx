@@ -103,6 +103,7 @@ const AccomodationForm = () => {
       stillActive,
       removeStage,
       getRetryState,
+      unsubscribeById,
     },
   ] = useImageStage();
 
@@ -151,9 +152,13 @@ const AccomodationForm = () => {
       stageImageController.signal.addEventListener(
         'abort',
         () => {
-          const retryFn = getRetryState(id);
-          if (!retryFn) return;
-          retryFn(false);
+          const currentStage = getStageState(id);
+          if (currentStage) {
+            removeStage(id);
+            const retryFn = getRetryState(currentStage.id);
+            if (!retryFn) return;
+            retryFn(false);
+          }
         },
         {
           once: true,
@@ -572,6 +577,7 @@ const AccomodationForm = () => {
                   }}
                   removePhoto={(id) => {
                     const stageImage = getStageState(id);
+
                     if (stageImage) {
                       imageAbortStore.get(id)?.abort();
 

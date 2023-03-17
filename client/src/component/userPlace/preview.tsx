@@ -1,4 +1,4 @@
-import { InfinitySpin } from 'react-loader-spinner';
+import { InfinitySpin, ProgressBar } from 'react-loader-spinner';
 
 import './style.preview.css';
 import type { CreateImagePayload } from '../../../../server/src/controller/image/upload';
@@ -225,18 +225,70 @@ const ImagePreviewStageLoader = ({
   const isProcessingUpload = _isStagedUpload && staged.status === 'process';
   const isFailedUpload = _isStagedUpload && staged.status === 'failed';
 
-  if (isProcessingFetch) {
-    //show loading skeleton
-    return (
-      <div className="loading">
-        <InfinitySpin />
+  let stagedImageAction: React.ReactNode | null;
+  if (_isStagedFetch) {
+    stagedImageAction = null;
+  } else {
+    stagedImageAction = (
+      <div className="task">
+        <span
+          className="action-icon"
+          onClick={() => {
+            if (stageImageServerFinalizeStatus(staged))
+              setAsPlacePhotoTag(getItemId(staged), removePhoto);
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12"
+            />
+          </svg>
+        </span>
+        <span
+          className="action-icon"
+          onClick={() => removePhoto(getItemId(staged))}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+            />
+          </svg>
+        </span>
       </div>
     );
   }
 
-  if (isFailedFetch) {
+  if (isProcessingFetch) {
+    //show loading skeleton
     return (
-      <div className="loading" style={{ fontSize: '1.6rem' }}>
+      <div className="stage-preview loading">
+        <InfinitySpin />
+        {stagedImageAction}
+      </div>
+    );
+  }
+
+  if (isFailedFetch || isFailedUpload) {
+    return (
+      <div className="stage-preview loading" style={{ fontSize: '1.6rem' }}>
         {retryStage ? (
           <span className="retry-icon" onClick={retryStage}>
             <svg
@@ -253,37 +305,22 @@ const ImagePreviewStageLoader = ({
             </svg>
           </span>
         ) : null}
+        {stagedImageAction}
       </div>
     );
-  }
-
-  if (isFailedUpload) {
-    return (
-      <div>
-        <span>Failed to upload</span>
-        <span>Retry</span>
-      </div>
-    );
-  }
-
-  if (isProcessingUpload) {
-    return <div>Uploading...</div>;
   }
 
   return isStagedLoaded || qualifyForPreview ? (
-    <div className="complete-preview">
+    <div className="stage-preview complete-preview">
       <img src={url} alt={staged.filename} />
-      <div className="task">
-        <span
-          onClick={() => {
-            if (stageImageServerFinalizeStatus(staged))
-              setAsPlacePhotoTag(getItemId(staged), removePhoto);
-          }}
-        >
-          Mark
-        </span>
-        <span onClick={() => removePhoto(getItemId(staged))}>Delete</span>
-      </div>
+
+      {isProcessingUpload ? (
+        <div className="upload-icon center-progress">
+          <ProgressBar />
+        </div>
+      ) : null}
+
+      {stagedImageAction}
     </div>
   ) : null;
 };

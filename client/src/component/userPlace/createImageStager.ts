@@ -1,7 +1,6 @@
 import { getPromisePart } from '../../util';
 import { RenderImage } from './preview';
 import {
-  CreateStageOptionTraitProps,
   FetchExternalServerSigPart,
   FetchServerSigPart,
   LoadSigPart,
