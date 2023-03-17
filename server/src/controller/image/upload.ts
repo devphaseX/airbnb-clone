@@ -46,15 +46,14 @@ const getImage: GetImageHandler = async (req, res, next) => {
     if (image) {
       const imagePath = path.join(__dirname, 'file', 'images', imageName);
       await fs.writeFile(imagePath, image.data!.binary!);
-      return res.status(404).end();
-      // return res
-      //   .set('content-type', image?.data?.contentType)
-      //   .sendFile(imagePath, () => {
-      //     fs.rm(imagePath).then(
-      //       () => {},
-      //       () => {}
-      //     );
-      //   });
+      return res
+        .set('content-type', image?.data?.contentType)
+        .sendFile(imagePath, () => {
+          fs.rm(imagePath).then(
+            () => {},
+            () => {}
+          );
+        });
     } else {
       return res.send('failed');
     }
