@@ -56,6 +56,8 @@ interface ServerAccomodationData extends ClientAccomodationFormData {
   photoTag: NonNullable<AccomodationFormData['photoTag']> extends infer PhotoTag
     ? Exclude<PhotoTag, string>
     : never;
+
+  price: number;
 }
 
 const createStopStageObserverFn =

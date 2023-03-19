@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { SchemaTimestampsConfig } from 'mongoose';
 import { ZodRawShape, ZodType } from 'zod';
 import { AuthCookie } from '../server/app/token';
 
@@ -29,4 +29,9 @@ declare global {
 
   type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
   type WithId<T extends object> = T & { id: string; _id?: string };
+
+  type DocumentCreatedField = Exclude<
+    keyof SchemaTimestampsConfig,
+    'currentTime'
+  >;
 }

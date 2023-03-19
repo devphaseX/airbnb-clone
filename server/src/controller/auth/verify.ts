@@ -81,6 +81,7 @@ const protectedAuthRoute =
   async (req, res, next) => {
     const { skipResponse } = option ?? {};
     const accessToken = req.cookies[ACCESS_TOKEN_NAME];
+    console.log(accessToken);
 
     if (accessToken) {
       const authStatus = await getUserAuthStatus(accessToken);
