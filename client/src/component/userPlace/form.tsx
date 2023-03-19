@@ -103,7 +103,6 @@ const AccomodationForm = () => {
       stillActive,
       removeStage,
       getRetryState,
-      unsubscribeById,
     },
   ] = useImageStage();
 
@@ -144,7 +143,6 @@ const AccomodationForm = () => {
       navigateAbortCtrl.abort = () => {
         const currentStage = getStageState(id);
         if (currentStage) {
-          removeStage(id);
           if (stageImageOnProcess(currentStage)) childAbort();
         }
       };
@@ -577,9 +575,9 @@ const AccomodationForm = () => {
                   }}
                   removePhoto={(id) => {
                     const stageImage = getStageState(id);
-
                     if (stageImage) {
                       imageAbortStore.get(id)?.abort();
+                      removeStage(id);
 
                       if (
                         stageImageServerFinalizeStatus(stageImage) &&

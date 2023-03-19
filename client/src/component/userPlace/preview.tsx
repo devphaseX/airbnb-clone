@@ -276,8 +276,6 @@ const ImagePreviewStageLoader = ({
     );
   }
 
-  console.log(stagedImageAction);
-
   if (isProcessingFetch) {
     //show loading skeleton
     return (

@@ -229,17 +229,13 @@ function createImageStager(): ImageStager {
     ) {
       return promise
         .then(() => {
-          let timerPromise: Promise<void>;
+          let timerPromise = waitAfterRetry as Promise<void>;
 
           if (typeof waitAfterRetry === 'number') {
             const { promise, resolve } = getPromisePart<void>();
 
-            setTimeout(() => {
-              resolve();
-            }, waitAfterRetry);
+            setTimeout(resolve, waitAfterRetry);
             timerPromise = promise;
-          } else {
-            timerPromise = waitAfterRetry;
           }
 
           return timerPromise;
