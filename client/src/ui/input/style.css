@@ -1,0 +1,28 @@
+.tag-input {
+  padding-block: 0.5rem;
+  padding-left: 1rem;
+}
+
+.tag-input {
+  border: 2px solid transparent;
+  line-height: 21px;
+}
+
+.tag-input:focus-within {
+  border-color: black;
+}
+
+.tag-input__type {
+  font-size: 0.9rem;
+  transition: all 200ms ease-in;
+  text-transform: uppercase;
+}
+
+.tag-input:not(:focus-within) .tag-input__type:not([persist]) {
+  visibility: hidden;
+  transform: translateY(50%);
+}
+
+.tag-input > input {
+  background-color: transparent;
+}

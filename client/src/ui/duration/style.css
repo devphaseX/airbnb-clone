@@ -1,0 +1,29 @@
+.log-duration {
+  position: relative;
+}
+
+.log-duration > div {
+  display: flex;
+}
+
+.log-duration span {
+  display: block;
+}
+
+.date-duration-picker-active {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.date-duration-picker-active > * {
+  flex-grow: 1;
+}
+
+.date-duration-picker-active label {
+  border: none;
+}
+
+.date-duration-picker-active label:last-of-type {
+  border-left: 1px solid black;
+}

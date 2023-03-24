@@ -1,0 +1,25 @@
+.link-style-input > * {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-width: 1px;
+}
+
+.link-style-input > :first-child {
+  /* border-bottom: ; */
+}
+
+.link-style-input > :first-child[focused] {
+  border-bottom-color: var(--border);
+}
+
+.link-style-input
+  > .link-style-input
+  > :first-child[focused]
+  + .link-style-input
+  > :first-child:not([focused]) {
+  border-top-color: var(--border);
+}
+
+.link-style-input[last-input-active] > :first-child {
+  border-bottom-color: var(--border);
+}

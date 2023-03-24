@@ -1,0 +1,27 @@
+.double-date-picker {
+  width: 661px;
+  min-height: 460px;
+  background-color: white;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 6px 20px;
+  border-radius: 16px;
+}
+
+.date-picker__header {
+  display: flex;
+}
+
+.date-picker__action {
+  display: flex;
+}
+
+/* .date-duration-picker {
+  border: 2px solid transparent;
+}
+
+.date-duration-picker:focus-within {
+  border-color: black;
+}
+
+.date-duration-picker label {
+  border: none;
+} */
