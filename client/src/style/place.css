@@ -1,0 +1,135 @@
+.place-heroes {
+  padding-top: 32px;
+}
+
+.place-content-meta {
+  margin-bottom: 24px;
+}
+
+.place-content-meta h2 {
+  font-size: 3.4rem;
+  font-weight: 500;
+}
+
+.place-content-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.6rem;
+  margin-top: 8px;
+}
+
+.place-content__address {
+  font-weight: 500;
+}
+
+.place-content__op > *:not(:last-child) {
+  margin-right: 24px;
+}
+
+.place-op__item {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 4px;
+  cursor: pointer;
+}
+
+.place-op__item > span:first-child {
+  width: 24px;
+  height: 24px;
+}
+
+.place-images {
+  border-radius: 20px;
+  height: 672px;
+  overflow: hidden;
+  gap: 4px;
+  position: relative;
+}
+
+.place-images-2 {
+  display: flex;
+}
+
+.place-images-2 > * {
+  display: inline-block;
+  flex-basis: 50%;
+  width: 0;
+}
+
+.place-images-3 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.place-images-3 > :first-child {
+  grid-column: 1 / -4;
+  grid-row: 1/-1;
+}
+
+.place-images-3 > img {
+  width: 100%;
+  height: 100%;
+}
+
+.place-images-3 > :nth-child(2) {
+  grid-row: 1 / span 1;
+  grid-column: -4/-1;
+}
+
+.place-images-3 > :nth-child(3) {
+  grid-row: 2 / -1;
+  grid-column: -4/-1;
+}
+
+.show-more-tag {
+  position: absolute;
+  font-size: 1.6rem;
+  color: black;
+  right: 16px;
+  bottom: 16px;
+  padding: 5px 10px;
+  isolation: isolate;
+}
+
+.show-more-tag::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.place-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 64px;
+}
+
+.place-info > * {
+  flex-shrink: 0;
+}
+
+.place-info__content > h3 {
+  font-size: 3.2rem;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+
+.place-info__access {
+  display: inline-flex;
+  font-size: 1.4rem;
+}
+
+.place-info__desc {
+  font-size: 1.6rem;
+}
+
+.place-booking {
+  width: fit-content;
+}

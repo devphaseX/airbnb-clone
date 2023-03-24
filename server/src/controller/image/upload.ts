@@ -25,7 +25,7 @@ const createImage: CreateImageHandler = async (req, res, next) => {
     const image = await Image.create({
       filename,
       data: { binary: file.buffer, contentType: file.mimetype },
-      imgUrlPath: `${req.protocol}://${req.headers.host}/${filename}`,
+      imgUrlPath: `${req.protocol}://${req.headers.host}/image/${filename}`,
       owner: req.user.id.toString(),
     });
 

@@ -6,7 +6,7 @@ import { globalErrorHandler } from './handleError';
 import { bookingRouter } from '../router/booking';
 
 const mountRoute = (app: Express) => {
-  app.use(imageRouter);
+  app.use('/image', imageRouter);
   app.use('/auth', userRouter);
   app.use('/place', placeRouter);
   app.use('/booking', bookingRouter);

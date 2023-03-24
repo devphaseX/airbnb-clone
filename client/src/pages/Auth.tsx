@@ -1,10 +1,5 @@
 import { useState, useId, useRef, useEffect } from 'react';
-import {
-  LoaderFunctionArgs,
-  redirect,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
+import { LoaderFunctionArgs, redirect, useLocation } from 'react-router-dom';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { createStore, useStore } from 'zustand';
 import '../style/login.css';
@@ -321,8 +316,8 @@ const Register = ({ setStep }: RegisterProps) => {
           inputClass="text__input"
           labelClass="text__input-label"
           placeholder="last name"
-          onInputFocus={createFocusHandler(true)}
-          onInputBlur={createFocusHandler(false)}
+          onFocus={createFocusHandler(true)}
+          onBlur={createFocusHandler(false)}
         />
         <p>Make sure it matches the name on your Government ID card.</p>
       </div>

@@ -6,6 +6,7 @@ import {
 } from '../../model/place';
 import { Image, ImageDoc } from '../../model';
 import { getEnv } from '../../server';
+import mongoose from 'mongoose';
 
 type CreateAccomodationHandler = RequestHandler<
   any,
@@ -28,8 +29,21 @@ const createAccomodation: CreateAccomodationHandler = async (req, res) => {
       })
     );
     const serverSortImages = serverImageStatus.filter(
-      (item): item is NonNullable<typeof item> => item !== null
+      (item): item is NonNullable<typeof item> =>
+        item !== null && item.toString() !== placeFormData.photoTag!
     );
+
+    if (
+      !placeFormData.photoTag ||
+      serverImageStatus.find(
+        (item) => item?.toString() === placeFormData.photoTag
+      )
+    ) {
+      //@ts-ignore
+      [placeFormData.photoTag] = serverSortImages;
+    } else {
+      serverSortImages.unshift(placeFormData.photoTag! as any);
+    }
 
     const place = await Place.create({
       ...placeFormData,
@@ -122,9 +136,10 @@ const updateUserPlace: UpdateUserPlaceHandler = async (req, res, next) => {
       [photoTag] = standByPhotos;
     }
 
+    standByPhotos.delete(photoTag!);
     const updatePlace = await Place.create({
       ...restData,
-      photos: Array.from(standByPhotos),
+      photos: [photoTag, ...standByPhotos],
       owner: req.user!._id,
       photoTag,
     });
@@ -139,6 +154,7 @@ const updateUserPlace: UpdateUserPlaceHandler = async (req, res, next) => {
         ).toObject()
       );
   } catch (e) {
+    // console.log(e);
     next(e);
   }
 };
@@ -150,6 +166,7 @@ const createGetPlacesHandler =
   async (req, res, next) => {
     try {
       let places;
+
       if (protectAccess) {
         places = await Place.find({
           owner: req.user._id! || req.user.id!,

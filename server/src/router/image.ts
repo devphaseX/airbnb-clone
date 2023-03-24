@@ -8,9 +8,13 @@ import {
 import { protectedAuthRoute } from '../controller/auth';
 
 const imageRouter = express.Router();
-
-imageRouter.post('/upload', protectedAuthRoute(), loadImage, createImage);
+//open access
 imageRouter.get('/:imageName', getImage);
-imageRouter.post('/image/untag', protectedAuthRoute(), removeUnTagImage);
+
+//protected access
+imageRouter
+  .use(protectedAuthRoute())
+  .post('/', loadImage, createImage)
+  .post('/untag', removeUnTagImage);
 
 export { imageRouter };

@@ -1,10 +1,27 @@
-import { useMutation } from 'react-query';
+import { UseMutationOptions, useMutation } from 'react-query';
 import { fetchFn } from '../api/baseUrl';
 
-import type { ClientAccomodationFormData } from '../../component/userPlace/form';
+import type {
+  ClientAccomodationFormData,
+  ServerAccomodationData,
+} from '../../component/userPlace/form';
 import { getItemId } from '../../util';
 
-const useCreatePlace = () =>
+interface CreatePlaceContext {
+  previousPlaces?: Array<ServerAccomodationData>;
+}
+
+type UseCreatePlaceOption = Omit<
+  UseMutationOptions<
+    Response,
+    unknown,
+    ClientAccomodationFormData,
+    CreatePlaceContext
+  >,
+  'mutationFn'
+>;
+
+const useCreatePlace = (option?: UseCreatePlaceOption) =>
   useMutation({
     mutationFn: (data: ClientAccomodationFormData) =>
       fetchFn((baseUrl) =>
@@ -20,6 +37,8 @@ const useCreatePlace = () =>
           }
         )
       )(),
+
+    ...option,
   });
 
 export { useCreatePlace };

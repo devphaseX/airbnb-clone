@@ -1,43 +1,113 @@
-import { UseFormProps } from 'react-hook-form';
-import { forwardRef } from 'react';
-import { LegacyRef } from 'react';
-import { useId } from 'react';
-import { useRef } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import {
+  useId,
+  useRef,
+  useLayoutEffect,
+  ForwardRefRenderFunction,
+  forwardRef,
+  type FC,
+  type Ref,
+} from 'react';
+import './style.css';
+import { mergeStyleClassName } from '../../util';
 
-type InputProps = {
-  type: React.HTMLInputTypeAttribute;
+interface InputProps
+  extends React.DetailedHTMLProps<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    HTMLInputElement
+  > {
+  type: React.HTMLInputTypeAttribute | 'lock' | undefined;
   label: string;
-  placeholder?: string;
   inputClass?: string;
-  labelClass?: string;
-  defaultValue?: string;
-  disabled?: boolean;
-  value?: string;
-  onInputFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
-  onInputBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  containerClass?: string;
+  placeholder?: string;
   Icon?: () => React.ReactElement;
-} & UseFormProps;
+  labelClass?: string;
+  forceLabelShow?: boolean;
+  containerRef?: Ref<HTMLLabelElement>;
+  onContainerClick?: () => void;
+}
 
-const _Input = (
-  {
+const TagInput: FC<InputProps> = ({
+  type,
+  label,
+  value,
+  defaultValue,
+  onContainerClick,
+  onClick,
+  forceLabelShow,
+  labelClass,
+  inputClass,
+  containerClass,
+  containerRef,
+}) => {
+  if (type === 'lock' && typeof (value ?? defaultValue) === 'undefined') {
+    throw new TypeError(
+      'Lock input must provide either a value or defaultValue'
+    );
+  }
+  const formID = useId();
+  const tagLabelRef = useRef<HTMLParagraphElement | null>(null);
+
+  useLayoutEffect(() => {
+    const tagLabelEl = tagLabelRef.current;
+    if (typeof forceLabelShow === 'undefined' || !tagLabelEl) return;
+    tagLabelEl.toggleAttribute('persist', forceLabelShow);
+  }, [forceLabelShow]);
+
+  return (
+    <label
+      className={mergeStyleClassName(['tag-input', containerClass ?? ''])}
+      onClick={onContainerClick}
+      htmlFor={formID}
+      key={formID}
+      ref={containerRef}
+    >
+      <p
+        className={mergeStyleClassName(['tag-input__type', labelClass ?? ''])}
+        ref={tagLabelRef}
+      >
+        {label}
+      </p>
+
+      <input
+        type={type === 'lock' ? 'button' : type}
+        id={formID}
+        onClick={onClick}
+        value={value ?? defaultValue}
+        className={mergeStyleClassName([inputClass ?? ''])}
+      />
+    </label>
+  );
+};
+
+const _Input: ForwardRefRenderFunction<HTMLInputElement, InputProps> = (
+  props,
+  ref?: Ref<HTMLInputElement>
+) => {
+  const {
     type,
     label,
-    placeholder,
     inputClass,
+    placeholder,
+    defaultValue,
+    disabled,
+    onFocus,
+    onBlur,
     labelClass,
     Icon,
-    defaultValue,
-    value,
-    onInputFocus,
-    onInputBlur,
+    forceLabelShow,
     ...rest
-  }: InputProps,
-  ref?: LegacyRef<HTMLInputElement>
-) => {
+  } = props;
   const formID = useId();
-  const inputRef = ref || useRef<HTMLInputElement | null>(null);
+  const inputRef =
+    (typeof ref === 'object' && ref) || useRef<HTMLInputElement | null>(null);
   const labelRef = useRef<HTMLLabelElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (inputRef && typeof forceLabelShow !== 'undefined') {
+      inputRef.current?.toggleAttribute('forceFocus', forceLabelShow);
+    }
+  }, [forceLabelShow]);
 
   return (
     <label
@@ -45,7 +115,7 @@ const _Input = (
       id={formID}
       style={{ display: 'block' }}
       ref={labelRef}
-      {...{ 'aria-disabled': rest.disabled ?? undefined }}
+      {...{ 'aria-disabled': disabled ?? undefined }}
     >
       <input
         type={type}
@@ -57,12 +127,12 @@ const _Input = (
         id={formID}
         onFocus={(event) => {
           labelRef.current && labelRef.current.toggleAttribute('focused', true);
-          onInputFocus?.(event);
+          onFocus?.(event);
         }}
         onBlur={(event) => {
           labelRef.current &&
             labelRef.current.toggleAttribute('focused', false);
-          onInputBlur?.(event);
+          onBlur?.(event);
         }}
       />
       <p className={labelClass}>{label}</p>
@@ -73,4 +143,4 @@ const _Input = (
 
 const Input = forwardRef<HTMLInputElement, InputProps>(_Input);
 
-export { Input };
+export { Input, TagInput as CustomInput };

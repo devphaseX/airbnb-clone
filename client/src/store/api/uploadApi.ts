@@ -7,7 +7,7 @@ const uploadImage = (
   onUploadProgress?: AxiosRequestConfig['onUploadProgress']
 ) => {
   return fetchFn((baseUrl) =>
-    axios.post(`${baseUrl}/upload`, data, {
+    axios.post(`${baseUrl}/image/`, data, {
       method: 'POST',
       withCredentials: true,
       headers: { 'Content-Type': 'multipart/form' },

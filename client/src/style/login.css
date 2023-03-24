@@ -96,18 +96,25 @@
   text-transform: capitalize;
 }
 
-.text__input:focus {
+.text__input:focus,
+.text__input[forceFocus] {
   top: 65%;
 }
 
-.text__input:focus + .text__input-label {
+.text__input[forceFocus] {
+  cursor: none;
+}
+
+.text__input:focus + .text__input-label,
+.text__input[forceFocus] + .text__input-label {
   top: 25%;
   visibility: visible;
   transition: visibility 0.3s ease-in, top 0.3s ease-out;
   font-size: 1.1rem;
 }
 
-.text__input:focus::placeholder {
+.text__input:focus::placeholder,
+.text__input[forceFocus]::placeholder {
   visibility: hidden;
 }
 
@@ -227,7 +234,6 @@
 }
 
 .name-wrapper .input-wrapper:first-of-type {
-  /* border-bottom-color: transparent; */
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom-width: 1px;

@@ -35,6 +35,7 @@ import { useImageDelete } from '../../store/mutation/deleteImage';
 import { useImageStage } from '../../hooks/useImageStage';
 import { OnStageResultFn, unwrapStatusObserverPayload } from './stageImage';
 import { useBlockLink, useBlockLinkNavigate } from '../../hooks/useBlockLink';
+import { query } from 'express';
 
 interface AccomodationFormData
   extends Omit<PlaceDoc, 'owner' | 'photos' | 'photoTag'> {
@@ -89,10 +90,12 @@ const AccomodationForm = () => {
   const imageRef = useRef<{ [blobImgId: string]: string }>({});
   const navigateAbortCtrl = useRef(new AbortController()).current;
   const imageAbortStore = useRef(new Map<string, AbortController>()).current;
-  const createPlace = useCreatePlace();
+
   const { basePath, beforeNowPath } = useOutletContext<AccountOutletContext>();
   const navigate = useBlockLinkNavigate();
   const queryClient = useQueryClient();
+  const createPlace = useCreatePlace();
+
   const deleteImageMutation = useImageDelete();
   const componentIsUmount = useRef(false);
   const [
@@ -431,7 +434,7 @@ const AccomodationForm = () => {
         const blob = new Blob([JSON.stringify(uploadImageInfo)], {
           type: 'application/json',
         });
-        window.navigator.sendBeacon(`${BASE_URL}/image/untag`, blob);
+        window.navigator.sendBeacon(`${BASE_URL}/untag`, blob);
       }
     };
 
@@ -447,7 +450,7 @@ const AccomodationForm = () => {
 
         imageRef.current = {};
         abruptNavigateHandler();
-        navigateAbortCtrl.abort(); //remove all / stop any ongoing fetching or uploading
+        navigateAbortCtrl.abort(); //cancel ongoing fetching after component exit
       }
     };
   }, [stageImages, componentIsUmount.current]);
@@ -482,9 +485,9 @@ const AccomodationForm = () => {
                 onSuccess: () => directUntagImages.clear(),
               });
             }
-            const response = await createPlace.mutateAsync(formData);
+            const placeCreateResponse = await createPlace.mutateAsync(formData);
 
-            if (response.ok) {
+            if (placeCreateResponse.ok) {
               const placeQueryData = await queryClient.getQueryData<
                 ServerAccomodationData[]
               >(['post']);
@@ -493,7 +496,7 @@ const AccomodationForm = () => {
                 await queryClient.cancelQueries(['places']);
                 await queryClient.setQueriesData(
                   ['post'],
-                  [await response.json(), ...placeQueryData]
+                  [await placeCreateResponse.json(), ...placeQueryData]
                 );
               } else {
                 await queryClient.invalidateQueries(['places']);
@@ -567,9 +570,7 @@ const AccomodationForm = () => {
                       stageImageServerFinalizeStatus(stagedImage)
                     ) {
                       const stagedImagePhotoId = getItemId(
-                        stagedImage.type === 'fetching'
-                          ? stagedImage.imageServer
-                          : stagedImage.serverImgInfo
+                        unwrapServerStageResult(stagedImage)
                       );
 
                       setPlacePhotoTag(stagedImagePhotoId);

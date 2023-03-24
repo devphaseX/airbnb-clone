@@ -30,7 +30,7 @@ const usePlacesQuery = (option = getDefaultOptions()) => {
         }
         throw response.json();
       }),
-    queryKey: ['places'],
+    queryKey: [option.withCredentials ? 'user-places' : 'places'],
     staleTime: Infinity,
   });
 };
