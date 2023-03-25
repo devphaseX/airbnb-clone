@@ -14,12 +14,19 @@ type BookingInfo = BookingDoc;
 interface BookingProps {
   placeId: string;
   pricePerNight: number;
+  checkinDate: Date | string;
+  checkoutDate: Date | string;
 }
 
 const BOOKING_LOCAL_KEY = 'BOOKING_LOCAL_KEY';
 
-const BookingForm: FC<BookingProps> = ({ placeId, pricePerNight }) => {
-  const { register, getValues, setValue } = useForm<BookingInfo>({
+const BookingForm: FC<BookingProps> = ({
+  placeId,
+  pricePerNight,
+  checkinDate,
+  checkoutDate,
+}) => {
+  const { getValues, setValue } = useForm<BookingInfo>({
     defaultValues: { guests: 1, placeId, price: pricePerNight },
   });
 
@@ -89,9 +96,13 @@ const BookingForm: FC<BookingProps> = ({ placeId, pricePerNight }) => {
           }}
         >
           <div className="guest-group">
-            <LogDurationPicker />
+            <LogDurationPicker
+              checkinDate={checkinDate}
+              checkoutDate={checkoutDate}
+            />
             <GuestSelection dropDownItems={[]} />
           </div>
+          <div className="sample"></div>
 
           <div className="booking-action">
             <button>Check availability</button>

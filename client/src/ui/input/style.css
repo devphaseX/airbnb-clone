@@ -1,10 +1,29 @@
 .tag-input {
-  border: 2px solid transparent;
+  border: 2px solid #8f8f8f;
   line-height: 21px;
   padding-block: 0.5rem;
-  padding-left: 1rem;
+  padding-inline: 1rem;
+  display: block;
+  min-height: 58px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.tag-input input {
   display: inline-block;
   text-align: start;
+  width: 100%;
+  font-size: 1.6rem;
+  color: black;
+  background-color: inherit;
+}
+
+.tag-input input::placeholder {
+  font: inherit;
+}
+
+.tag-input input:empty:focus::placeholder {
+  visibility: hidden;
 }
 
 .tag-input:focus-within {
@@ -12,7 +31,7 @@
 }
 
 .tag-input__type {
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: all 200ms ease-in;
   text-transform: uppercase;
 }
@@ -24,4 +43,15 @@
 
 .tag-input > input {
   background-color: transparent;
+}
+
+.input__wrapper {
+  display: flex;
+}
+
+.input__icon {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  /* padding-right: 20px; */
 }

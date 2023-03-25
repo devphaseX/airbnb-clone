@@ -15,12 +15,16 @@ const parseEmailSchema = (email: string | { email: string }) =>
 
 type VerifyUserHandler = RequestHandler<any, any, string | { email: string }>;
 
-const verifyUser: VerifyUserHandler = async (req, res) => {
+const verifyUser: VerifyUserHandler = async (req, res, next) => {
+  console.log(req.body);
   try {
     const email = parseEmailSchema(req.body);
     const user = await User.findOne({ email });
     return res.status(200).json({ exist: !!user });
-  } catch (e) {}
+  } catch (e) {
+    console.log(e);
+    next(e);
+  }
 };
 
 type AuthProgessType = 'found' | 'invalid' | 'deleted' | 'expired';

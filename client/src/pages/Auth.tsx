@@ -5,7 +5,7 @@ import { createStore, useStore } from 'zustand';
 import '../style/login.css';
 import googleIcon from '../assets/google.svg';
 import { Hide, Show } from '../ui/icon/password';
-import { Input } from '../ui/input';
+import { TagInput } from '../ui/input';
 import { authRoutePattern } from '../util';
 import { preAuthPageStore } from '../store/slice/resumePage';
 import { clientInfoStore } from '../store/slice/user';
@@ -211,30 +211,22 @@ const LogUserIn = ({ step, setStep }: LogUserInProps) => {
       >
         <h3 className="auth-welcome-message">Welcome to Airbnb</h3>
         {step === 'verify' ? (
-          <Input
+          <TagInput
             key={emailId}
             type="email"
-            inputClass="text__input"
             label="email"
-            labelClass="text__input-label"
             placeholder="Email"
-            defaultValue={email || ''}
             {...register('email')}
           />
         ) : (
-          <Input
+          <TagInput
             key={passwordId}
             type={showPassword ? 'text' : 'password'}
-            inputClass="text__input"
             label="password"
-            labelClass="text__input-label"
             placeholder="Password"
             {...register('password')}
             Icon={() => (
-              <span
-                className="password-icon"
-                onClick={() => setShowPassword((status) => !status)}
-              >
+              <span onClick={() => setShowPassword((status) => !status)}>
                 {showPassword ? <Show /> : <Hide />}
               </span>
             )}
@@ -301,20 +293,16 @@ const Register = ({ setStep }: RegisterProps) => {
       })}
     >
       <div className="name-wrapper">
-        <Input
+        <TagInput
           type="text"
           {...register('firstName')}
           label="first name"
-          inputClass="text__input"
-          labelClass="text__input-label"
           placeholder="first name"
         />
-        <Input
+        <TagInput
           type="text"
           {...register('lastName')}
           label="last name"
-          inputClass="text__input"
-          labelClass="text__input-label"
           placeholder="last name"
           onFocus={createFocusHandler(true)}
           onBlur={createFocusHandler(false)}
@@ -322,11 +310,9 @@ const Register = ({ setStep }: RegisterProps) => {
         <p>Make sure it matches the name on your Government ID card.</p>
       </div>
       <div>
-        <Input
+        <TagInput
           type="text"
-          inputClass="text__input"
           label="Birthday"
-          labelClass="text__input-label"
           placeholder="Birthday"
           {...register('birthday')}
         />
@@ -336,22 +322,18 @@ const Register = ({ setStep }: RegisterProps) => {
         </p>
       </div>
       <div>
-        <Input
+        <TagInput
           type="email"
-          inputClass="text__input"
           label="email"
-          labelClass="text__input-label"
           placeholder={email.toLowerCase() || 'Email'}
           {...register('email', { disabled: email !== '', value: email })}
         />
         <p>We'll email you tip confirmations and receipts.</p>
       </div>
       <div>
-        <Input
+        <TagInput
           type={showPassword ? 'text' : 'password'}
-          inputClass="text__input"
           label="password"
-          labelClass="text__input-label"
           placeholder="Password"
           {...register('password')}
           Icon={() => (

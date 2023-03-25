@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, type FC } from 'react';
-import { CustomInput } from '../input';
+import { TagInput } from '../input';
 import { useForceUpdate } from '../../hooks/useForceUpdate';
 import { genNaiveRandomId } from '../../component/userPlace/preview';
 import { useModal } from '../../hooks/useModal';
@@ -16,7 +16,7 @@ const GuestSelection: FC<GuestSelectionProps> = ({ dropDownItems }) => {
 
   return (
     <div ref={guestRef} className="quest-select">
-      <CustomInput
+      <TagInput
         type="lock"
         label="guests"
         onContainerClick={openModal}

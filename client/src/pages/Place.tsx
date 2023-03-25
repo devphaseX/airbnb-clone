@@ -131,6 +131,8 @@ const Place = () => {
             <BookingForm
               placeId={getItemId(placeData)}
               pricePerNight={placeData.price}
+              checkinDate={new Date(placeData.checkin!)}
+              checkoutDate={new Date(placeData.checkout!)}
             />
           </div>
         </div>
