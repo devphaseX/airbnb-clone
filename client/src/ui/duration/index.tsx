@@ -44,7 +44,7 @@ export function LogDurationPicker({
               getPlaceholderDate()
             }
             forceLabelShow
-            onClick={openModal}
+            onClick={() => setTimeout(openModal, 30)}
           />
           <TagInput
             label="checkout"
