@@ -1,11 +1,10 @@
 .tag-input {
-  padding-block: 0.5rem;
-  padding-left: 1rem;
-}
-
-.tag-input {
   border: 2px solid transparent;
   line-height: 21px;
+  padding-block: 0.5rem;
+  padding-left: 1rem;
+  display: inline-block;
+  text-align: start;
 }
 
 .tag-input:focus-within {

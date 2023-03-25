@@ -7,11 +7,19 @@ import { useRef } from 'react';
 
 type UseModalResult = [
   open: boolean,
-  action: { openModal: () => void; closeModal: () => void }
+  action: {
+    openModal: () => void;
+    closeModal: () => void;
+  }
 ];
 
+type UseModalOption = {
+  boundaryClass?: string;
+};
+
 const useModal = <T extends HTMLElement>(
-  ref: RefObject<T> | null
+  ref: RefObject<T> | null,
+  option?: UseModalOption
 ): UseModalResult => {
   const [open, setModal] = useState(false);
   const _id = useRef(genNaiveRandomId().replace(/\d+/g, '')).current;
@@ -26,19 +34,31 @@ const useModal = <T extends HTMLElement>(
       const eventListernerOption: AddEventListenerOptions = {
         signal: aborter.signal,
       };
+
       document.body.addEventListener(
         'click',
         (event) => {
-          if (!(event.target as HTMLElement).closest(`#${id}`)) closeModal();
+          if (
+            !(event.target as HTMLElement).closest(
+              (option?.boundaryClass && `.${option.boundaryClass}`) ?? id
+            )
+          )
+            closeModal();
         },
         eventListernerOption
       );
 
       return aborter.abort.bind(aborter);
     }
-  }, [ref]);
+  }, []);
 
-  return [open, { closeModal, openModal }];
+  return [
+    open,
+    {
+      closeModal,
+      openModal,
+    },
+  ];
 };
 
 export { useModal };

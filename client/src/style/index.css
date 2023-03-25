@@ -115,6 +115,9 @@ ul {
 
 button {
   font: inherit;
+  background-color: inherit;
+  border: none;
+  outline: none;
 }
 
 button::placeholder {

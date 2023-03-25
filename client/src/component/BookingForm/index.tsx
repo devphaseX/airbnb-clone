@@ -55,7 +55,7 @@ const BookingForm: FC<BookingProps> = ({ placeId, pricePerNight }) => {
   }, []);
 
   return (
-    <div style={{ fontSize: '1.8rem' }} className="booking-form">
+    <div className="booking-form">
       <div className="booking-meta">
         <h4>
           <span>${pricePerNight}</span>&nbsp;
@@ -99,16 +99,16 @@ const BookingForm: FC<BookingProps> = ({ placeId, pricePerNight }) => {
           </div>
         </form>
       </div>
-      <div>
-        <div>
+      <div className="booking-pricing">
+        <div className="pricing-per-night">
           <p>
             <span>
-              ${pricePerNight}x${durationPeriod}nights
+              ${pricePerNight} x {durationPeriod}nights
             </span>
           </p>
           <span>${totalBookingCost}</span>
         </div>
-        <div>
+        <div className="pricing-actual">
           <p>Total before taxes</p>
           <p>${totalBookingCost}</p>
         </div>

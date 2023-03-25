@@ -5,6 +5,7 @@ import 'react-day-picker/dist/style.css';
 import './style.css';
 import { useModal } from '../../hooks/useModal';
 import { useRef } from 'react';
+import { useLayoutEffect } from 'react';
 
 const getPlaceholderDate = () => `dd/mm/yyyy`;
 const getLocaleDate = (date: Date) => date.toLocaleDateString();
@@ -14,7 +15,9 @@ export function LogDurationPicker() {
   const [checkout, setCheckout] = useState<Date | null>(null);
   const durationRef = useRef<HTMLDivElement | null>(null);
 
-  const [open, { openModal, closeModal }] = useModal(durationRef);
+  const [open, { openModal, closeModal }] = useModal(durationRef, {
+    boundaryClass: 'log-duration',
+  });
 
   return (
     <div id="duration" className="log-duration">
@@ -44,7 +47,7 @@ export function LogDurationPicker() {
       </div>
       {open ? (
         <div className="double-date-picker-ctn">
-          {/* <DoubleDatePicker
+          <DoubleDatePicker
             startDate={
               (checkin && getLocaleDate(checkin)) ?? getPlaceholderDate()
             }
@@ -54,7 +57,7 @@ export function LogDurationPicker() {
             setStartDate={setCheckin}
             setEndDate={setCheckout}
             closePicker={closeModal}
-          /> */}
+          />
         </div>
       ) : null}
     </div>

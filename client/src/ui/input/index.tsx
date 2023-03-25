@@ -45,7 +45,7 @@ const TagInput: FC<InputProps> = ({
       'Lock input must provide either a value or defaultValue'
     );
   }
-  const formID = useId();
+  const formID = useId().replace(/\W/g, '');
   const tagLabelRef = useRef<HTMLParagraphElement | null>(null);
 
   useLayoutEffect(() => {
