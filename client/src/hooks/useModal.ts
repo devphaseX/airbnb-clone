@@ -43,7 +43,6 @@ const useModal = <T extends HTMLElement>(
           const selector = option.boundaryClass
             ? `.${option.boundaryClass}`
             : `#${id}`;
-
           if (!(event.target as HTMLElement).closest(selector)) {
             closeModal();
           }

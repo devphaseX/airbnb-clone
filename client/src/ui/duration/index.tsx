@@ -12,12 +12,11 @@ const getLocaleDate = (date: Date) => date.toLocaleDateString();
 interface LogDurationPickerProps {
   checkinDate: Date | string;
   checkoutDate: Date | string;
+  checkPlacement: Array<{ from: Date; to: Date }>;
 }
 
-export function LogDurationPicker({
-  checkinDate,
-  checkoutDate,
-}: LogDurationPickerProps) {
+export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
+  const [{ from: checkinDate, to: checkoutDate }] = checkPlacement ?? [];
   const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
     new Date(checkinDate)
   );
@@ -75,6 +74,7 @@ export function LogDurationPicker({
               pickDate: (date) => setUserPickedCheckout(date),
             }}
             closePicker={closeModal}
+            checkPlacement={checkPlacement}
           />
         </div>
       ) : null}

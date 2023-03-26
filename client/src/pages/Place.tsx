@@ -134,6 +134,10 @@ const Place = () => {
               pricePerNight={placeData.price}
               checkinDate={new Date(2023, 3, 17)}
               checkoutDate={new Date(2023, 3, 23)}
+              checkPlacement={[
+                { from: new Date(2023, 3, 17), to: new Date(2023, 3, 23) },
+                { from: new Date(2023, 3, 25), to: new Date(2023, 3, 28) },
+              ]}
             />
           </div>
         </div>

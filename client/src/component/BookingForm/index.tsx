@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
+import { addYears, subDays } from 'date-fns';
 import { BookingDoc } from '../../../../server/src/model';
 import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
@@ -8,6 +9,7 @@ import { fetchFn } from '../../store/api/baseUrl';
 import { LogDurationPicker } from '../../ui/duration';
 import { GuestSelection } from '../../ui/guestSelection';
 import './style.css';
+import { useMemo } from 'react';
 
 type BookingInfo = BookingDoc;
 
@@ -16,6 +18,7 @@ interface BookingProps {
   pricePerNight: number;
   checkinDate: Date | string;
   checkoutDate: Date | string;
+  checkPlacement: Array<{ from: Date; to: Date }>;
 }
 
 const BOOKING_LOCAL_KEY = 'BOOKING_LOCAL_KEY';
@@ -25,6 +28,7 @@ const BookingForm: FC<BookingProps> = ({
   pricePerNight,
   checkinDate,
   checkoutDate,
+  checkPlacement,
 }) => {
   const { getValues, setValue } = useForm<BookingInfo>({
     defaultValues: { guests: 1, placeId, price: pricePerNight },
@@ -99,6 +103,7 @@ const BookingForm: FC<BookingProps> = ({
             <LogDurationPicker
               checkinDate={checkinDate}
               checkoutDate={checkoutDate}
+              checkPlacement={checkPlacement}
             />
             <GuestSelection dropDownItems={[]} />
           </div>
