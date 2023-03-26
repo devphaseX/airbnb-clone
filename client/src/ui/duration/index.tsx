@@ -65,12 +65,10 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
         <div className="double-date-picker-ctn">
           <DoubleDatePicker
             checkin={{
-              fromDate: checkinDate,
               ...(userPickedCheckin && { currentPicked: userPickedCheckin }),
               pickDate: (date) => setUserPickedCheckin(date),
             }}
             checkout={{
-              toDate: checkoutDate,
               ...(userPickedCheckout && { currentPicked: userPickedCheckout }),
               pickDate: (date) => setUserPickedCheckout(date),
             }}

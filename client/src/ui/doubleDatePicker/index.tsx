@@ -4,6 +4,7 @@ import {
   addDays,
   endOfMonth,
   subDays,
+  startOfMonth,
 } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
@@ -12,28 +13,28 @@ import { useUnmountStatus } from '../../hooks/useUnmount';
 import './style.css';
 import { useMemo } from 'react';
 
-type DatePickerFn = (date: Date) => void;
+type DatePickerFn = (date: Date | null) => void;
 
 interface TimeCheck {
   currentPicked?: Date;
   pickDate: DatePickerFn;
 }
 
-interface CheckinTime extends TimeCheck {
-  fromDate: Date | string;
-}
-
-interface CheckoutTime extends TimeCheck {
-  toDate: Date | string;
-}
-
 type PlacementTime = { from: Date; to: Date };
 interface DoubleDatePickerProps {
   closePicker: () => void;
-  checkin: CheckinTime;
-  checkout: CheckoutTime;
+  checkin: TimeCheck;
+  checkout: TimeCheck;
   checkPlacement: Array<PlacementTime>;
 }
+
+const pickedAvailablePlacement = (
+  duration: Array<PlacementTime>,
+  choosenTime: Date
+) =>
+  duration.find(
+    (placement) => placement.from >= choosenTime && choosenTime <= placement.to
+  );
 
 const resetSymbol = Symbol();
 
@@ -46,11 +47,15 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   const [active, setActive] = useState<1 | 2>(1);
   const checkinRef = useRef<HTMLButtonElement | null>(null);
   const checkoutRef = useRef<HTMLButtonElement | null>(null);
+  const defaultPlacement = useMemo<PlacementTime>(
+    () => checkPlacement[0]!,
+    [checkPlacement]
+  );
   const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
-    new Date(checkin.currentPicked ?? checkin.fromDate)
+    new Date(checkin.currentPicked ?? defaultPlacement.from)
   );
   const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
-    new Date(checkout.currentPicked ?? checkout.toDate)
+    checkout.currentPicked ?? null
   );
 
   const [currentNavigateYear, setCurrentNavigateYear] = useState(
@@ -77,14 +82,10 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
       .map((first, i, list) =>
         i === 0
           ? {
-              from: new Date(
-                first.from.getFullYear(),
-                first.from.getMonth(),
-                1
-              ),
+              from: startOfMonth(first.from),
               to: subDays(first.from, 1),
             }
-          : { from: subDays(list[i].from, 1), to: first.to }
+          : { from: addDays(list[i - 1].to, 1), to: first.from }
       );
 
     offDates.unshift({
@@ -95,15 +96,17 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   }, [checkPlacement]);
 
   const [userEnteredCheckin, setUserEnteredCheckin] = useState<null | string>(
-    ''
+    null //result to default checkout mode by setting to null
   );
   const [userEnteredCheckout, setUserEnteredCheckout] = useState<
     string | typeof resetSymbol | null
-  >('');
+  >(
+    '' //due to multiple checkin duration cannot infer the checkout so we result to input mode empty string
+  );
 
   const getUnmountStatus = useUnmountStatus();
-  let { fromDate, pickDate: pickCheckinDate } = checkin;
-  let { toDate, pickDate: pickCheckoutDate } = checkout;
+  const { pickDate: pickCheckinDate, currentPicked: pickedFrom } = checkin;
+  const { pickDate: pickCheckoutDate, currentPicked: pickedTo } = checkout;
 
   const [userDatePickerFn, currentMarkedDate] =
     active === 1
@@ -115,27 +118,30 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   useEffect(() => {
     return () => {
       if (getUnmountStatus()) {
-        // pickCheckinDate(userPickedCheckin);
-        // pickCheckoutDate(userPickedCheckout);
+        pickCheckinDate(userPickedCheckin ?? new Date(defaultPlacement.from));
+        pickCheckoutDate(userPickedCheckout);
       }
     };
   });
 
   useEffect(() => {
-    document.body.addEventListener(
-      'keydown',
-      (event) => {
-        console.log('prevent');
-        event.stopPropagation();
-      },
-      { capture: true }
-    );
-  }, []);
-
-  console.log({
-    userEnteredCheckout,
-  });
-
+    if (userPickedCheckin && userPickedCheckout) {
+      console.log(
+        pickedAvailablePlacement(checkPlacement, userPickedCheckin),
+        pickedAvailablePlacement(checkPlacement, userPickedCheckout)
+      );
+    }
+    if (
+      userDatePickerFn === null ||
+      !userPickedCheckin ||
+      (userPickedCheckout &&
+        pickedAvailablePlacement(checkPlacement, userPickedCheckin) !==
+          pickedAvailablePlacement(checkPlacement, userPickedCheckout))
+    ) {
+      setUserEnteredCheckout('');
+    }
+  }, [userPickedCheckin]);
+  console.log(offPlacements);
   useLayoutEffect(() => {
     const checkinButton = checkinRef.current;
     const checkoutButton = checkoutRef.current;
@@ -149,7 +155,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
       <header
         className="date-picker__header"
         onClick={(event) => {
-          console.log('stop ');
+          //prevent click from escaping this component to other observing component
           event.stopPropagation();
         }}
       >
@@ -159,7 +165,51 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           </h3>
           <p>Add your traveling date for exact pricing</p>
         </div>
-        <div className="date-picker__action">
+        <div
+          className="date-picker__action"
+          onKeyDown={(event) => {
+            if (event.code.toLowerCase() === 'enter') {
+              if (
+                userDatePickerFn === setUserEnteredCheckin &&
+                typeof userEnteredCheckin === 'string' &&
+                userEnteredCheckin
+              ) {
+                const userChoosenCheckin = new Date(userEnteredCheckin);
+
+                const availableForBooking = pickedAvailablePlacement(
+                  checkPlacement,
+                  userChoosenCheckin
+                );
+
+                if (availableForBooking) {
+                  setUserPickedCheckin(userChoosenCheckin);
+                  setUserEnteredCheckin(null);
+                } else {
+                  //warned
+                }
+              } else if (
+                userDatePickerFn === setUserEnteredCheckout &&
+                typeof userEnteredCheckout === 'string' &&
+                userEnteredCheckout
+              ) {
+                const userChoosenCheckout = new Date(userEnteredCheckout);
+
+                const availableForBooking = pickedAvailablePlacement(
+                  checkPlacement,
+                  userChoosenCheckout
+                );
+                if (availableForBooking) {
+                  setUserPickedCheckout(userChoosenCheckout);
+                  setUserEnteredCheckout('');
+                } else {
+                  //warned
+                }
+              }
+
+              event.stopPropagation();
+            }
+          }}
+        >
           <button
             type="button"
             onClickCapture={(event) => {
@@ -168,7 +218,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               ) {
                 setUserEnteredCheckout('');
               } else {
-                event.preventDefault();
+                event.stopPropagation();
               }
               setActive(1);
             }}
@@ -180,10 +230,11 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               value={
                 userEnteredCheckin ??
                 userPickedCheckin?.toLocaleDateString() ??
-                checkin.fromDate.toLocaleString()
+                defaultPlacement.from.toLocaleString()
               }
               onChange={(event) => {
                 setUserEnteredCheckin((event.target as HTMLInputElement).value);
+                event.stopPropagation();
               }}
               forceLabelShow
               Icon={() => (
@@ -191,7 +242,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   className="cancel-icon"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setUserPickedCheckin(new Date(checkin.fromDate));
+                    setUserPickedCheckin(defaultPlacement.from);
                   }}
                 >
                   <svg
@@ -218,10 +269,13 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               if (
                 (event.target as HTMLElement).tagName.toLowerCase() === 'input'
               ) {
-                if (userEnteredCheckout !== resetSymbol)
+                if (
+                  userEnteredCheckout !== resetSymbol &&
+                  userEnteredCheckout === ''
+                )
                   setUserEnteredCheckout(resetSymbol);
               } else {
-                event.preventDefault();
+                event.stopPropagation();
               }
               setActive(2);
             }}
@@ -233,13 +287,15 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               value={
                 userEnteredCheckout === resetSymbol
                   ? ''
-                  : userEnteredCheckout ??
-                    (userPickedCheckout?.toLocaleDateString() || '')
+                  : (userEnteredCheckout ||
+                      userPickedCheckout?.toLocaleDateString()) ??
+                    ''
               }
               onChange={(event) => {
                 setUserEnteredCheckout(
                   (event.target as HTMLInputElement).value
                 );
+                event.stopPropagation();
               }}
               placeholder="MM/DD/YYYY"
               forceLabelShow
@@ -248,7 +304,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   className="cancel-icon"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setUserPickedCheckout(new Date(checkout.toDate));
+                    setUserPickedCheckout(null);
                   }}
                 >
                   <svg
@@ -300,8 +356,8 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           type="button"
           className="clear-button"
           onClick={() => {
-            setUserPickedCheckin(new Date(checkin.fromDate));
-            setUserPickedCheckout(new Date(checkout.toDate));
+            setUserPickedCheckin(defaultPlacement.from);
+            setUserPickedCheckout(defaultPlacement.to);
           }}
         >
           Clear dates
