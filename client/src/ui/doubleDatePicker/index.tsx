@@ -3,7 +3,6 @@ import {
   differenceInCalendarDays,
   addDays,
   endOfMonth,
-  addYears,
   subDays,
 } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
@@ -122,6 +121,17 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
     };
   });
 
+  useEffect(() => {
+    document.body.addEventListener(
+      'keydown',
+      (event) => {
+        console.log('prevent');
+        event.stopPropagation();
+      },
+      { capture: true }
+    );
+  }, []);
+
   console.log({
     userEnteredCheckout,
   });
@@ -139,6 +149,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
       <header
         className="date-picker__header"
         onClick={(event) => {
+          console.log('stop ');
           event.stopPropagation();
         }}
       >

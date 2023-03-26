@@ -32,12 +32,13 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
 
   return (
     <div id="duration" className="log-duration">
-      <div
-        className="date-duration-picker"
-        onClickCapture={closeModal}
-        ref={durationRef}
-      >
-        <div className="date-duration-picker-active">
+      <div className="date-duration-picker" ref={durationRef}>
+        <div
+          className="date-duration-picker-active"
+          onClickCapture={(event) => {
+            if (open) event.stopPropagation();
+          }}
+        >
           <TagInput
             label="checkin"
             type="lock"

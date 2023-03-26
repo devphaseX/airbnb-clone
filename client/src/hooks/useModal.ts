@@ -25,7 +25,9 @@ const useModal = <T extends HTMLElement>(
   const [open, setModal] = useState(false);
   const _id = useRef(genNaiveRandomId().replace(/\d+/g, '')).current;
   const openModal = useCallback(() => setModal(true), []);
-  const closeModal = useCallback(() => setModal(false), []);
+  const closeModal = useCallback(() => {
+    setModal(false);
+  }, []);
 
   useEffect(() => {
     if (ref && ref.current) {
@@ -43,7 +45,9 @@ const useModal = <T extends HTMLElement>(
           const selector = option.boundaryClass
             ? `.${option.boundaryClass}`
             : `#${id}`;
-          if (!(event.target as HTMLElement).closest(selector)) {
+
+          if (open && !(event.target as HTMLElement).closest(selector)) {
+            console.log('body');
             closeModal();
           }
         },
@@ -52,7 +56,7 @@ const useModal = <T extends HTMLElement>(
 
       return aborter.abort.bind(aborter);
     }
-  }, []);
+  }, [open]);
 
   return [
     open,
