@@ -14,12 +14,13 @@ type UseModalResult = [
 ];
 
 type UseModalOption = {
-  boundaryClass?: string;
+  boundaryClass: string;
+  closeClassBoundary?: string;
 };
 
 const useModal = <T extends HTMLElement>(
   ref: RefObject<T> | null,
-  option?: UseModalOption
+  option: UseModalOption
 ): UseModalResult => {
   const [open, setModal] = useState(false);
   const _id = useRef(genNaiveRandomId().replace(/\d+/g, '')).current;
@@ -33,17 +34,19 @@ const useModal = <T extends HTMLElement>(
       ref.current.id = id;
       const eventListernerOption: AddEventListenerOptions = {
         signal: aborter.signal,
+        capture: false,
       };
 
       document.body.addEventListener(
         'click',
         (event) => {
-          if (
-            !(event.target as HTMLElement).closest(
-              (option?.boundaryClass && `.${option.boundaryClass}`) ?? id
-            )
-          )
+          const selector = option.boundaryClass
+            ? `.${option.boundaryClass}`
+            : `#${id}`;
+
+          if (!(event.target as HTMLElement).closest(selector)) {
             closeModal();
+          }
         },
         eventListernerOption
       );

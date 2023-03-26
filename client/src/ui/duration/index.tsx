@@ -18,10 +18,13 @@ export function LogDurationPicker({
   checkinDate,
   checkoutDate,
 }: LogDurationPickerProps) {
-  const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(null);
-  const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
-    null
+  const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
+    new Date(checkinDate)
   );
+  const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
+    new Date(checkoutDate)
+  );
+
   const durationRef = useRef<HTMLDivElement | null>(null);
 
   const [open, { openModal, closeModal }] = useModal(durationRef, {
@@ -62,14 +65,14 @@ export function LogDurationPicker({
         <div className="double-date-picker-ctn">
           <DoubleDatePicker
             checkin={{
-              date: checkinDate,
+              fromDate: checkinDate,
+              ...(userPickedCheckin && { currentPicked: userPickedCheckin }),
               pickDate: (date) => setUserPickedCheckin(date),
-              reset: () => setUserPickedCheckin(null),
             }}
             checkout={{
-              date: checkoutDate,
+              toDate: checkoutDate,
+              ...(userPickedCheckout && { currentPicked: userPickedCheckout }),
               pickDate: (date) => setUserPickedCheckout(date),
-              reset: () => setUserPickedCheckout(null),
             }}
             closePicker={closeModal}
           />

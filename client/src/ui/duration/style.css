@@ -40,3 +40,15 @@
 .date-picker__action > button {
   display: inline-block;
 }
+
+.cancel-icon {
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  z-index: 2;
+  box-sizing: content-box;
+  padding: 4px;
+}

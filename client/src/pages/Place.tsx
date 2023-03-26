@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 const Place = () => {
   const placeData = useLoaderData() as ServerAccomodationData;
+  console.log(placeData.checkin, placeData.checkout);
   const [displayOrderImages, setDisplayOrderImages] = useState(
     placeData.photos.slice(0, 3)
   );
@@ -131,8 +132,8 @@ const Place = () => {
             <BookingForm
               placeId={getItemId(placeData)}
               pricePerNight={placeData.price}
-              checkinDate={new Date(placeData.checkin!)}
-              checkoutDate={new Date(placeData.checkout!)}
+              checkinDate={new Date(2023, 3, 17)}
+              checkoutDate={new Date(2023, 3, 23)}
             />
           </div>
         </div>

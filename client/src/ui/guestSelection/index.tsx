@@ -12,7 +12,9 @@ interface GuestSelectionProps {
 const GuestSelection: FC<GuestSelectionProps> = ({ dropDownItems }) => {
   const guestRef = useRef<HTMLDivElement | null>(null);
   const [totalGuest, setTotalGuest] = useState(1);
-  const [open, { closeModal, openModal }] = useModal(guestRef);
+  const [open, { closeModal, openModal }] = useModal(guestRef, {
+    boundaryClass: '',
+  });
 
   return (
     <div ref={guestRef} className="quest-select">
