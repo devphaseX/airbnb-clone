@@ -2,7 +2,6 @@ import {
   useId,
   useRef,
   useLayoutEffect,
-  ForwardRefRenderFunction,
   forwardRef,
   type FC,
   type Ref,
@@ -23,7 +22,7 @@ interface InputProps
   Icon?: () => React.ReactElement;
   labelClass?: string;
   forceLabelShow?: boolean;
-  containerRef?: Ref<HTMLLabelElement>;
+  containerRef?: Ref<HTMLDivElement>;
   onContainerClick?: () => void;
 }
 
@@ -61,10 +60,10 @@ const TagInput = forwardRef<HTMLInputElement, InputProps>(
     }, [forceLabelShow]);
 
     return (
-      <label
+      <div
         className={mergeStyleClassName(['tag-input', containerClass ?? ''])}
         onClick={onContainerClick}
-        htmlFor={formID}
+        // htmlFor={formID}
         key={formID}
         ref={containerRef}
       >
@@ -85,7 +84,7 @@ const TagInput = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
         />
         {Icon && <Icon />}
-      </label>
+      </div>
     );
   }
 );

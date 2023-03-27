@@ -24,6 +24,8 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
     new Date(checkoutDate)
   );
 
+  const [active, setActive] = useState<1 | 2>(1);
+
   const durationRef = useRef<HTMLDivElement | null>(null);
 
   const [open, { openModal, closeModal }] = useModal(durationRef, {
@@ -36,7 +38,29 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
         <div
           className="date-duration-picker-active"
           onClickCapture={(event) => {
-            if (open) event.stopPropagation();
+            if (open) return event.stopPropagation();
+
+            const button = (event.target as HTMLElement).closest('.tag-input');
+            const wrapperDiv = event.currentTarget as HTMLElement;
+            if (button && wrapperDiv.contains(button)) {
+              let _active = active;
+              switch (button) {
+                case wrapperDiv.children[0]: {
+                  _active = 1;
+                  break;
+                }
+
+                case wrapperDiv.children[1]: {
+                  _active = 2;
+                  break;
+                }
+              }
+
+              setActive(_active);
+
+              setTimeout(openModal, 30);
+              event.stopPropagation();
+            }
           }}
         >
           <TagInput
@@ -47,7 +71,6 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
               getPlaceholderDate()
             }
             forceLabelShow
-            onClick={() => setTimeout(openModal, 30)}
           />
           <TagInput
             label="checkout"
@@ -57,13 +80,14 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
               getPlaceholderDate()
             }
             forceLabelShow
-            onClick={openModal}
           />
         </div>
       </div>
       {open ? (
         <div className="double-date-picker-ctn">
           <DoubleDatePicker
+            active={active}
+            setActive={setActive}
             checkin={{
               ...(userPickedCheckin && { currentPicked: userPickedCheckin }),
               pickDate: (date) => setUserPickedCheckin(date),

@@ -36,7 +36,7 @@
   text-underline-offset: 2px;
 }
 
-.guest-group label {
+.guest-group .tag-input {
   border: none;
 }
 
@@ -93,7 +93,7 @@
   width: 100%;
 }
 
-.guest-group label {
+.guest-group .tag-input {
   width: 100%;
   display: inline-block;
 }

@@ -27,11 +27,11 @@
   flex-grow: 1;
 }
 
-.date-duration-picker-active label {
+.date-duration-picker-active .tag-input {
   border: none;
 }
 
-.date-duration-picker-active label:last-of-type {
+.date-duration-picker-active .tag-input:last-of-type {
   border-left: 1px solid black;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
