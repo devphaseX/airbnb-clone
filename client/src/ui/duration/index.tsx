@@ -21,7 +21,7 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
     new Date(checkinDate)
   );
   const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
-    new Date(checkoutDate)
+    null
   );
 
   const [active, setActive] = useState<1 | 2>(1);

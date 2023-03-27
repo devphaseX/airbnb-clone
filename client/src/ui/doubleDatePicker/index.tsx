@@ -45,56 +45,76 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   checkin,
   checkout,
   closePicker,
-  checkPlacement,
+  checkPlacement: unsortedCheckPlacement,
 }) => {
   const checkinRef = useRef<HTMLButtonElement | null>(null);
   const checkoutRef = useRef<HTMLButtonElement | null>(null);
-  const defaultPlacement = useMemo<PlacementTime>(
-    () => checkPlacement[0]!,
-    [checkPlacement]
-  );
+
   const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
-    new Date(checkin.currentPicked ?? defaultPlacement.from)
+    checkin.currentPicked ?? null
   );
+
   const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
     checkout.currentPicked ?? null
   );
+
+  const checkPlacement = useMemo(() => {
+    if (active === 1) {
+      return unsortedCheckPlacement.sort((a, b) =>
+        new Date(a.from).getTime() <= new Date(b.from).getTime() &&
+        new Date(a.to) <= new Date(b.to)
+          ? -1
+          : 0
+      );
+    } else {
+      if (userPickedCheckin) {
+        const checkout = pickedAvailablePlacement(
+          unsortedCheckPlacement,
+          userPickedCheckin
+        );
+
+        if (checkout) return [checkout];
+      }
+      return [];
+    }
+  }, [unsortedCheckPlacement, active, userPickedCheckin]);
 
   const [currentNavigateYear, setCurrentNavigateYear] = useState(
     checkPlacement.at(-1)!.to.getFullYear()
   );
 
-  const logBoundary = useMemo(
-    () => ({
-      from: addDays(checkPlacement.at(-1)!.to, 1),
-      to: endOfMonth(new Date(currentNavigateYear, 11)),
-    }),
-    [checkPlacement, currentNavigateYear]
+  const defaultPlacement = useMemo<PlacementTime>(
+    () => checkPlacement[0]!,
+    [checkPlacement]
   );
 
   const offPlacements = useMemo(() => {
-    const offDates = checkPlacement
-      .slice(0)
-      .sort((a, b) =>
-        new Date(a.from).getTime() <= new Date(b.from).getTime() &&
-        new Date(a.to) <= new Date(b.to)
-          ? -1
-          : 0
-      )
-      .map((first, i, list) =>
-        i === 0
-          ? {
-              from: startOfMonth(first.from),
-              to: subDays(first.from, 1),
-            }
-          : { from: addDays(list[i - 1].to, 1), to: first.from }
+    if (checkPlacement.length) {
+      const startOffDate = { from: new Date(0), to: checkPlacement[0].from };
+
+      const offDates = checkPlacement.map((first, i, list) =>
+        i === 0 ? first : { from: addDays(list[i - 1].to, 1), to: first.from }
       );
 
-    offDates.unshift({
-      from: new Date(0),
-      to: new Date(checkPlacement.at(0)!.from),
-    });
-    return offDates;
+      if (startOffDate) offDates[0] = startOffDate;
+
+      offDates.push({
+        from: addDays(checkPlacement.at(-1)!.to, 1),
+        to: endOfMonth(new Date(currentNavigateYear, 11)),
+      });
+
+      return offDates;
+    }
+    return [{ from: new Date(0), to: endOfMonth(new Date()) }];
+  }, [checkPlacement, currentNavigateYear, active]);
+
+  const { startDate, endDate } = useMemo(() => {
+    const [start, end] =
+      checkPlacement.length === 1
+        ? [checkPlacement[0], checkPlacement[0]]
+        : checkPlacement.slice(0, 2);
+
+    return { startDate: start.from, endDate: end.to };
   }, [checkPlacement]);
 
   const [userEnteredCheckin, setUserEnteredCheckin] = useState<null | string>(
@@ -323,7 +343,9 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
         pagedNavigation
         selected={currentMarkedDate}
         month={currentMarkedDate}
-        disabled={[...offPlacements, logBoundary]}
+        fromDate={startDate}
+        toDate={endDate}
+        disabled={offPlacements}
         onSelect={(date) => {
           if (date) {
             userDatePickerFn(date);
