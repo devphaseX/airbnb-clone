@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
-import { addYears, subDays } from 'date-fns';
 import { BookingDoc } from '../../../../server/src/model';
 import { useStore } from 'zustand';
 import { clientInfoStore } from '../../store/slice/user';
@@ -9,7 +8,6 @@ import { fetchFn } from '../../store/api/baseUrl';
 import { LogDurationPicker } from '../../ui/duration';
 import { GuestSelection } from '../../ui/guestSelection';
 import './style.css';
-import { useMemo } from 'react';
 
 type BookingInfo = BookingDoc;
 
@@ -110,7 +108,7 @@ const BookingForm: FC<BookingProps> = ({
           <div className="sample"></div>
 
           <div className="booking-action">
-            <button>Check availability</button>
+            <button type="button">Check availability</button>
             <p>You won't be charged yet.</p>
           </div>
         </form>

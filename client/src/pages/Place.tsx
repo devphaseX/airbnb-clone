@@ -8,7 +8,6 @@ import { useState } from 'react';
 
 const Place = () => {
   const placeData = useLoaderData() as ServerAccomodationData;
-  console.log(placeData.checkin, placeData.checkout);
   const [displayOrderImages, setDisplayOrderImages] = useState(
     placeData.photos.slice(0, 3)
   );

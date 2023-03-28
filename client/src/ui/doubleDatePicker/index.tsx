@@ -1,11 +1,5 @@
 import { useLayoutEffect, useState, useRef, useEffect, type FC } from 'react';
-import {
-  differenceInCalendarDays,
-  addDays,
-  endOfMonth,
-  subDays,
-  startOfMonth,
-} from 'date-fns';
+import { differenceInCalendarDays, addDays, endOfMonth } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { TagInput } from '../input';
@@ -38,6 +32,8 @@ const pickedAvailablePlacement = (
   );
 
 const resetSymbol = Symbol();
+
+const datePattern = /(?<month>\d{1,2})\/(?<day>\d{1,2})\/(?<year>\d{4})/;
 
 const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   active,
@@ -120,10 +116,8 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   const [userEnteredCheckin, setUserEnteredCheckin] = useState<null | string>(
     null //result to default checkout mode by setting to null
   );
-  const [userEnteredCheckout, setUserEnteredCheckout] = useState<
-    string | typeof resetSymbol | null
-  >(
-    '' //due to multiple checkin duration cannot infer the checkout so we result to input mode empty string
+  const [userEnteredCheckout, setUserEnteredCheckout] = useState<string | null>(
+    null //due to multiple checkin duration cannot infer the checkout so we result to input mode empty string
   );
 
   const { pickDate: pickCheckinDate, currentPicked: pickedFrom } = checkin;
@@ -134,7 +128,11 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
       ? [setUserPickedCheckin, pickedFrom]
       : [setUserPickedCheckout, pickedTo];
 
-  const logDuration = differenceInCalendarDays(new Date(), new Date());
+  const logDuration =
+    (userPickedCheckout &&
+      userPickedCheckin &&
+      differenceInCalendarDays(userPickedCheckout, userPickedCheckin)) ??
+    null;
 
   useEffect(() => {
     pickCheckinDate(userPickedCheckin ?? new Date(defaultPlacement.from));
@@ -168,68 +166,29 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
       <header
         className="date-picker__header"
         onClick={(event) => {
-          //prevent click from escaping this component to other observing component
-          event.stopPropagation();
+          event.nativeEvent.stopImmediatePropagation();
         }}
       >
         <div>
           <h3>
-            {logDuration} day{logDuration > 1 ? 's' : ''}
+            {logDuration !== null && userPickedCheckin && userPickedCheckout
+              ? `${logDuration} day${logDuration > 1 ? 's' : ''}`
+              : 'Select date'}
           </h3>
           <p>Add your traveling date for exact pricing</p>
         </div>
-        <div
-          className="date-picker__action"
-          onKeyDown={(event) => {
-            if (event.code.toLowerCase() === 'enter') {
-              if (
-                userDatePickerFn === setUserEnteredCheckin &&
-                typeof userEnteredCheckin === 'string' &&
-                userEnteredCheckin
-              ) {
-                const userChoosenCheckin = new Date(userEnteredCheckin);
-
-                const availableForBooking = pickedAvailablePlacement(
-                  checkPlacement,
-                  userChoosenCheckin
-                );
-
-                if (availableForBooking) {
-                  setUserPickedCheckin(userChoosenCheckin);
-                  setUserEnteredCheckin(null);
-                } else {
-                  //warned
-                }
-              } else if (
-                userDatePickerFn === setUserEnteredCheckout &&
-                typeof userEnteredCheckout === 'string' &&
-                userEnteredCheckout
-              ) {
-                const userChoosenCheckout = new Date(userEnteredCheckout);
-
-                const availableForBooking = pickedAvailablePlacement(
-                  checkPlacement,
-                  userChoosenCheckout
-                );
-                if (availableForBooking) {
-                  setUserPickedCheckout(userChoosenCheckout);
-                  setUserEnteredCheckout('');
-                } else {
-                  //warned
-                }
-              }
-
-              event.stopPropagation();
-            }
-          }}
-        >
+        <div className="date-picker__action">
           <button
             type="button"
             onClickCapture={(event) => {
               if (
                 (event.target as HTMLElement).tagName.toLowerCase() === 'input'
               ) {
-                setUserEnteredCheckout('');
+                setUserEnteredCheckin(
+                  userPickedCheckin?.toLocaleDateString() ??
+                    checkin.currentPicked?.toLocaleDateString() ??
+                    ''
+                );
               }
               setActive(1);
             }}
@@ -247,6 +206,9 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 setUserEnteredCheckin((event.target as HTMLInputElement).value);
                 event.stopPropagation();
               }}
+              onBlur={() => {
+                if (userEnteredCheckin) setUserEnteredCheckin(null);
+              }}
               forceLabelShow
               Icon={() => (
                 <span
@@ -254,6 +216,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   onClick={(event) => {
                     event.stopPropagation();
                     setUserPickedCheckin(defaultPlacement.from);
+                    setUserEnteredCheckin(null);
                   }}
                 >
                   <svg
@@ -280,12 +243,9 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               if (
                 (event.target as HTMLElement).tagName.toLowerCase() === 'input'
               ) {
-                if (
-                  userEnteredCheckout !== resetSymbol &&
-                  userEnteredCheckout === ''
-                )
-                  setUserEnteredCheckout(resetSymbol);
+                if (userEnteredCheckout === null) setUserEnteredCheckout('');
               }
+
               setActive(2);
             }}
             ref={checkoutRef}
@@ -294,12 +254,13 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               label="checkout"
               type="text"
               value={
-                userEnteredCheckout === resetSymbol
-                  ? ''
-                  : (userEnteredCheckout ||
-                      userPickedCheckout?.toLocaleDateString()) ??
-                    ''
+                userEnteredCheckout ??
+                userPickedCheckout?.toLocaleDateString() ??
+                ''
               }
+              onBlur={() => {
+                if (userEnteredCheckout === '') setUserEnteredCheckout(null);
+              }}
               onChange={(event) => {
                 setUserEnteredCheckout(
                   (event.target as HTMLInputElement).value
@@ -314,6 +275,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   onClick={(event) => {
                     event.stopPropagation();
                     setUserPickedCheckout(null);
+                    setUserEnteredCheckout('');
                   }}
                 >
                   <svg
@@ -350,11 +312,17 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           if (date) {
             userDatePickerFn(date);
 
-            if (userDatePickerFn === setUserPickedCheckout) {
+            if (
+              userDatePickerFn === setUserPickedCheckout &&
+              userEnteredCheckin !== null
+            ) {
               setUserEnteredCheckout(null);
             }
 
-            if (userDatePickerFn === setUserPickedCheckin) {
+            if (
+              userDatePickerFn === setUserPickedCheckin &&
+              userEnteredCheckout !== null
+            ) {
               setUserEnteredCheckin(null);
             }
           }
@@ -369,15 +337,32 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           type="button"
           className="clear-button"
           onClick={(event) => {
-            if (event.target === event.currentTarget) {
+            if (
+              (event.currentTarget as HTMLElement).contains(
+                event.target as HTMLElement
+              )
+            ) {
               setUserPickedCheckin(defaultPlacement.from);
-              setUserPickedCheckout(defaultPlacement.to);
+              setUserPickedCheckout(null);
             }
           }}
         >
           Clear dates
         </button>
-        <button type="button" className="close-button" onClick={closePicker}>
+        <button
+          type="button"
+          className="close-button"
+          onClick={(event) => {
+            if (
+              (event.currentTarget as HTMLElement).contains(
+                event.target as HTMLElement
+              )
+            ) {
+              closePicker();
+              event.stopPropagation();
+            }
+          }}
+        >
           Close
         </button>
       </div>

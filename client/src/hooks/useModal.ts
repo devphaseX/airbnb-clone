@@ -39,15 +39,28 @@ const useModal = <T extends HTMLElement>(
         capture: false,
       };
 
+      let hasDetectKeyPress = false;
+
+      document.body.addEventListener(
+        'keydown',
+        () => {
+          hasDetectKeyPress = true;
+        },
+        { capture: true }
+      );
+
       document.body.addEventListener(
         'click',
         (event) => {
+          if (hasDetectKeyPress) {
+            hasDetectKeyPress = false;
+            return;
+          }
           const selector = option.boundaryClass
             ? `.${option.boundaryClass}`
             : `#${id}`;
 
           if (open && !(event.target as HTMLElement).closest(selector)) {
-            console.log('body');
             closeModal();
           }
         },
