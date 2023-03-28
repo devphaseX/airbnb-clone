@@ -32,6 +32,11 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
     boundaryClass: 'log-duration',
   });
 
+  console.log(
+    (userPickedCheckout && getCompliantDateOutput(userPickedCheckout)) ??
+      undefined
+  );
+
   return (
     <div id="duration" className="log-duration">
       <div className="date-duration-picker" ref={durationRef}>
@@ -66,20 +71,22 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
           <TagInput
             label="checkin"
             type="lock"
+            placeholder={getCompliantDateOutput(null).toUpperCase()}
             value={
               (userPickedCheckin &&
                 getCompliantDateOutput(userPickedCheckin)) ??
-              getPlaceholderDate()
+              ''
             }
             forceLabelShow
           />
           <TagInput
             label="checkout"
             type="lock"
+            placeholder={getCompliantDateOutput(null).toUpperCase()}
             value={
               (userPickedCheckout &&
                 getCompliantDateOutput(userPickedCheckout)) ??
-              getPlaceholderDate()
+              ''
             }
             forceLabelShow
           />

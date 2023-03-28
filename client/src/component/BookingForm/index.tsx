@@ -103,6 +103,7 @@ const BookingForm: FC<BookingProps> = ({
               checkoutDate={checkoutDate}
               checkPlacement={checkPlacement}
             />
+
             <GuestSelection dropDownItems={[]} />
           </div>
           <div className="sample"></div>

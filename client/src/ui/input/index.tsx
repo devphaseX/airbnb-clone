@@ -41,13 +41,18 @@ const TagInput = forwardRef<HTMLInputElement, InputProps>(
       containerClass,
       containerRef,
       Icon,
+      placeholder,
       ...rest
     },
     ref
   ) => {
-    if (type === 'lock' && typeof (value ?? defaultValue) === 'undefined') {
+    if (
+      typeof placeholder === 'undefined' &&
+      type === 'lock' &&
+      typeof (value ?? defaultValue) === 'undefined'
+    ) {
       throw new TypeError(
-        'Lock input must provide either a value or defaultValue'
+        'Lock input must provide either a placeholder, value or defaultValue'
       );
     }
     const formID = useId().replace(/\W/g, '');
@@ -59,6 +64,7 @@ const TagInput = forwardRef<HTMLInputElement, InputProps>(
       tagLabelEl.toggleAttribute('persist', forceLabelShow);
     }, [forceLabelShow]);
 
+    const choosenValue = value ?? defaultValue;
     return (
       <div
         className={mergeStyleClassName(['tag-input', containerClass ?? ''])}
@@ -78,8 +84,11 @@ const TagInput = forwardRef<HTMLInputElement, InputProps>(
           type={type === 'lock' ? 'button' : type}
           id={formID}
           onClick={onClick}
-          value={value ?? defaultValue}
+          value={
+            choosenValue ? choosenValue : type === 'lock' ? placeholder : ''
+          }
           className={mergeStyleClassName([inputClass ?? ''])}
+          placeholder={placeholder}
           {...rest}
           ref={ref}
         />

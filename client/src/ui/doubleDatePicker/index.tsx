@@ -322,7 +322,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 });
               }
             }
-            debugger;
+
             userPickedCheckFn(searchDate);
 
             event.stopPropagation();
@@ -429,7 +429,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 );
                 event.stopPropagation();
               }}
-              placeholder="MM/DD/YYYY"
+              placeholder={getCompliantDateOutput(null).toUpperCase()}
               forceLabelShow
               Icon={() => (
                 <span

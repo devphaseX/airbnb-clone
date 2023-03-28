@@ -21,6 +21,7 @@
 
 .tag-input input::placeholder {
   font: inherit;
+  color: black;
 }
 
 .tag-input input:empty:focus::placeholder {
