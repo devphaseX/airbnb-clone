@@ -60,6 +60,13 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 }) => {
   const checkinRef = useRef<HTMLButtonElement | null>(null);
   const checkoutRef = useRef<HTMLButtonElement | null>(null);
+  const [checkinValidateResult, setCheckinValidateResult] =
+    useState<ValidationResult | null>(null);
+  const [checkoutValidatResult, setCheckoutValidateResult] =
+    useState<ValidationResult | null>(null);
+
+  const { pickDate: pickCheckinDate, currentPicked: pickedFrom } = checkin;
+  const { pickDate: pickCheckoutDate, currentPicked: pickedTo } = checkout;
 
   const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
     checkin.currentPicked ?? null
@@ -68,6 +75,15 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
     checkout.currentPicked ?? null
   );
+
+  const [userInputCheckin, setUserInputCheckin] = useState<null | string>(null);
+  const [userInputCheckout, setUserInputCheckout] = useState<string | null>(
+    null
+  );
+  const [userDatePickerFn, currentMarkedDate] =
+    active === 1
+      ? [setUserPickedCheckin, pickedFrom]
+      : [setUserPickedCheckout, pickedTo];
 
   const checkPlacement = useMemo(() => {
     if (active === 1) {
@@ -121,7 +137,6 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
     }
     return [{ from: new Date(0), to: endOfMonth(new Date()) }];
   }, [checkPlacement, currentNavigateYear, active]);
-  console.log(offPlacements);
 
   const { startDate, endDate } = useMemo(() => {
     const [start, end] =
@@ -131,26 +146,6 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 
     return { startDate: start.from, endDate: end.to };
   }, [checkPlacement]);
-
-  const [userEnteredCheckin, setUserEnteredCheckin] = useState<null | string>(
-    null //result to default checkout mode by setting to null
-  );
-  const [userEnteredCheckout, setUserEnteredCheckout] = useState<string | null>(
-    null //due to multiple checkin duration cannot infer the checkout so we result to input mode empty string
-  );
-
-  const [checkinValidateResult, setCheckinValidateResult] =
-    useState<ValidationResult | null>(null);
-  const [checkoutValidatResult, setCheckoutValidateResult] =
-    useState<ValidationResult | null>(null);
-
-  const { pickDate: pickCheckinDate, currentPicked: pickedFrom } = checkin;
-  const { pickDate: pickCheckoutDate, currentPicked: pickedTo } = checkout;
-
-  const [userDatePickerFn, currentMarkedDate] =
-    active === 1
-      ? [setUserPickedCheckin, pickedFrom]
-      : [setUserPickedCheckout, pickedTo];
 
   const logDuration =
     (userPickedCheckout &&
@@ -172,7 +167,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           pickedAvailablePlacement(checkPlacement, userPickedCheckout) ||
           userPickedCheckout < userPickedCheckin))
     ) {
-      setUserEnteredCheckout('');
+      setUserInputCheckout('');
       setUserPickedCheckout(null);
     }
   }, [userPickedCheckin]);
@@ -192,19 +187,18 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 
     []
   );
-
+  // separate logic to prevent message show dependency
   useLayoutEffect(() => {
     if (checkinValidateResult) {
       return validateMessageTimerFn(setCheckinValidateResult);
     }
   }, [checkinValidateResult]);
-
+  // separate logic to prevent message show dependency
   useLayoutEffect(() => {
     if (checkoutValidatResult) {
       return validateMessageTimerFn(setCheckoutValidateResult);
     }
   }, [checkoutValidatResult]);
-  console.log({ checkinValidateResult, checkoutValidatResult });
 
   useLayoutEffect(() => {
     const checkinButton = checkinRef.current;
@@ -247,19 +241,22 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 ? 'checkin'
                 : 'checkout';
 
-            let userEnteredCheckValue;
-            let userPickedCheckFn;
-            let userSetValidateResultFn;
-
-            if (checkButtonType === 'checkin') {
-              userEnteredCheckValue = userEnteredCheckin;
-              userPickedCheckFn = setUserPickedCheckin;
-              userSetValidateResultFn = setCheckinValidateResult;
-            } else {
-              userEnteredCheckValue = userEnteredCheckout;
-              userPickedCheckFn = setUserPickedCheckout;
-              userSetValidateResultFn = setCheckoutValidateResult;
-            }
+            let [
+              userEnteredCheckValue,
+              userPickedCheckFn,
+              userSetValidateResultFn,
+            ] =
+              checkButtonType === 'checkin'
+                ? [
+                    userInputCheckin,
+                    setUserPickedCheckin,
+                    setCheckinValidateResult,
+                  ]
+                : [
+                    userInputCheckout,
+                    setUserPickedCheckout,
+                    setCheckoutValidateResult,
+                  ];
 
             if (userEnteredCheckValue === null) return;
 
@@ -334,7 +331,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               if (
                 (event.target as HTMLElement).tagName.toLowerCase() === 'input'
               ) {
-                setUserEnteredCheckin(
+                setUserInputCheckin(
                   userPickedCheckin?.toLocaleDateString() ??
                     checkin.currentPicked?.toLocaleDateString() ??
                     ''
@@ -348,21 +345,21 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               label="checkin"
               type="text"
               value={
-                userEnteredCheckin ??
+                userInputCheckin ??
                 (userPickedCheckin &&
                   getCompliantDateOutput(userPickedCheckin)) ??
                 defaultPlacement.from.toLocaleString()
               }
               onChange={(event) => {
-                setUserEnteredCheckin((event.target as HTMLInputElement).value);
+                setUserInputCheckin((event.target as HTMLInputElement).value);
                 event.stopPropagation();
               }}
               onBlur={() => {
-                if (userEnteredCheckin) setUserEnteredCheckin(null);
+                if (userInputCheckin) setUserInputCheckin(null);
               }}
               onKeyDown={(event) => {
                 if (
-                  userEnteredCheckout &&
+                  userInputCheckout &&
                   event.code.toLowerCase() === 'enter' &&
                   !checkoutValidatResult
                 ) {
@@ -377,7 +374,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   onClick={(event) => {
                     event.stopPropagation();
                     setUserPickedCheckin(defaultPlacement.from);
-                    setUserEnteredCheckin(null);
+                    setUserInputCheckin(null);
                   }}
                 >
                   <svg
@@ -404,7 +401,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               if (
                 (event.target as HTMLElement).tagName.toLowerCase() === 'input'
               ) {
-                if (userEnteredCheckout === null) setUserEnteredCheckout('');
+                if (userInputCheckout === null) setUserInputCheckout('');
               }
 
               setActive(2);
@@ -415,18 +412,16 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               label="checkout"
               type="text"
               value={
-                userEnteredCheckout ??
+                userInputCheckout ??
                 (userPickedCheckout &&
                   getCompliantDateOutput(userPickedCheckout)) ??
                 ''
               }
               onBlur={() => {
-                if (userEnteredCheckout !== null) setUserEnteredCheckout(null);
+                if (userInputCheckout !== null) setUserInputCheckout(null);
               }}
               onChange={(event) => {
-                setUserEnteredCheckout(
-                  (event.target as HTMLInputElement).value
-                );
+                setUserInputCheckout((event.target as HTMLInputElement).value);
                 event.stopPropagation();
               }}
               placeholder={getCompliantDateOutput(null).toUpperCase()}
@@ -437,7 +432,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                   onClick={(event) => {
                     event.stopPropagation();
                     setUserPickedCheckout(null);
-                    setUserEnteredCheckout('');
+                    setUserInputCheckout('');
                   }}
                 >
                   <svg
@@ -476,16 +471,16 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 
             if (
               userDatePickerFn === setUserPickedCheckout &&
-              userEnteredCheckin !== null
+              userInputCheckin !== null
             ) {
-              setUserEnteredCheckout(null);
+              setUserInputCheckout(null);
             }
 
             if (
               userDatePickerFn === setUserPickedCheckin &&
-              userEnteredCheckout !== null
+              userInputCheckout !== null
             ) {
-              setUserEnteredCheckin(null);
+              setUserInputCheckin(null);
             }
           }
         }}

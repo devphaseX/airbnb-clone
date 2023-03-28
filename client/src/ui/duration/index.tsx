@@ -7,8 +7,6 @@ import { useModal } from '../../hooks/useModal';
 import { useRef } from 'react';
 import { getCompliantDateOutput } from '../../util';
 
-const getPlaceholderDate = () => `dd/mm/yyyy`;
-
 interface LogDurationPickerProps {
   checkinDate: Date | string;
   checkoutDate: Date | string;
@@ -31,11 +29,6 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
   const [open, { openModal, closeModal }] = useModal(durationRef, {
     boundaryClass: 'log-duration',
   });
-
-  console.log(
-    (userPickedCheckout && getCompliantDateOutput(userPickedCheckout)) ??
-      undefined
-  );
 
   return (
     <div id="duration" className="log-duration">
