@@ -3,22 +3,70 @@
 }
 
 .select-icon {
-  width: 22px;
-  height: 22px;
-  padding: 5px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  border: 1px solid rgb(167, 167, 167);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  background-color: white;
+}
+
+.select-icon svg {
+  width: 70%;
+  height: 70%;
+  font-weight: bold;
 }
 
 .guest-dropdown {
   bottom: 0;
-  left: 0;
+  right: 0;
+  min-width: 280px;
   width: 100%;
-  transform: translateY(100%);
+  transform: translateY(101%);
   position: absolute;
-  z-index: 4;
+  z-index: 5;
   box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 6px,
     rgba(0, 0, 0, 0.07) 0px 0px 0px 1px;
   background-color: white;
-  border-radius: 4px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 32px 16px;
+}
+
+.guest-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.guest-list li:not(:last-child) {
+  margin-bottom: 20px;
+}
+
+.guest-list li,
+.guest-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guest-count {
+  column-gap: 8px;
+}
+
+.guest-count__indicator {
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  color: #525252;
+}
+
+.guest-info h3 {
+  font-size: 1.6rem;
+  text-transform: capitalize;
+}
+
+.guest-info p {
+  font-size: 1.4rem;
 }

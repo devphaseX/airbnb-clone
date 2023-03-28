@@ -3,7 +3,6 @@ import { TagInput } from '../input';
 import { DoubleDatePicker } from '../doubleDatePicker';
 import 'react-day-picker/dist/style.css';
 import './style.css';
-import { useModal } from '../../hooks/useModal';
 import { useRef } from 'react';
 import { getCompliantDateOutput } from '../../util';
 import { useModalContext } from '../ModalProvider';
@@ -34,7 +33,7 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
       register({
         id,
         observer: (open) => setOpen(open),
-        boundaryClass: '.quest-select',
+        boundaryClass: '.log-duration',
       }),
     []
   );
@@ -53,8 +52,6 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
         <div
           className="date-duration-picker-active"
           onClickCapture={(event) => {
-            if (open) return event.stopPropagation();
-
             const button = (event.target as HTMLElement).closest('.tag-input');
             const wrapperDiv = event.currentTarget as HTMLElement;
             if (button && wrapperDiv.contains(button)) {

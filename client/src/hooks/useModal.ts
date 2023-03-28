@@ -72,25 +72,31 @@ const useModal = (): UseModalResult => {
       { capture: true }
     );
 
-    document.body.addEventListener('click', (event) => {
-      if (hasDetectKeyPress && !(hasDetectKeyPress = false)) return;
+    document.body.addEventListener(
+      'click',
+      (event) => {
+        if (hasDetectKeyPress && !(hasDetectKeyPress = false)) return;
+        const otherModalStillOpen =
+          Array.from(modalOptions.values(), ([_, open]) => open).filter(Boolean)
+            .length > 1;
 
-      const otherModalStillOpen =
-        Array.from(modalOptions.values(), ([_, open]) => open).filter(Boolean)
-          .length > 1;
+        const hasClickedSide = Array.from(
+          modalOptions.values(),
+          ([{ boundaryClass }]) => {
+            let boundaryElement = document.querySelector(boundaryClass);
+            if (!boundaryElement) return true;
+            return !boundaryElement.contains(event.target as HTMLElement);
+          }
+        ).some(Boolean);
 
-      const hasClickedSide = Array.from(
-        modalOptions.values(),
-        ([{ boundaryClass }]) =>
-          !(event.target as HTMLElement).closest(boundaryClass)
-      ).some(Boolean);
-
-      if (!otherModalStillOpen && hasClickedSide) {
-        observerOptions.forEach(({ closeModal }) => {
-          closeModal();
-        });
-      }
-    });
+        if (!otherModalStillOpen && hasClickedSide) {
+          observerOptions.forEach(({ closeModal }) => {
+            closeModal();
+          });
+        }
+      },
+      { capture: false }
+    );
   }, []);
 
   return { register };

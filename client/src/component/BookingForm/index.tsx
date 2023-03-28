@@ -98,7 +98,10 @@ const BookingForm: FC<BookingProps> = ({
             }
           }}
         >
-          <div className="guest-group" onClickCapture={() => {}}>
+          <div
+            className="guest-group"
+            onClick={(event) => event.stopPropagation()}
+          >
             <ModalProvider>
               <LogDurationPicker
                 checkinDate={checkinDate}
