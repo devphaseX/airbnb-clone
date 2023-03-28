@@ -4,6 +4,9 @@ import { useForceUpdate } from '../../hooks/useForceUpdate';
 import { genNaiveRandomId } from '../../component/userPlace/preview';
 import { useModal } from '../../hooks/useModal';
 import './style.css';
+import { useModalContext } from '../ModalProvider';
+import { useEffect } from 'react';
+import { useId } from 'react';
 
 interface GuestSelectionProps {
   dropDownItems: Array<Omit<CategoryPick, 'id' | 'picked'>>;
@@ -12,16 +15,28 @@ interface GuestSelectionProps {
 const GuestSelection: FC<GuestSelectionProps> = ({ dropDownItems }) => {
   const guestRef = useRef<HTMLDivElement | null>(null);
   const [totalGuest, setTotalGuest] = useState(1);
-  const [open, { closeModal, openModal }] = useModal(guestRef, {
-    boundaryClass: '',
-  });
+  const [open, setOpen] = useState(false);
+  const { register } = useModalContext();
+  const id = useId();
 
+  const { openModal, closeModal, unsubscribe } = useMemo(
+    () =>
+      register({
+        id,
+        boundaryClass: '.quest-select',
+        observer: (open) => setOpen(open),
+      }),
+    []
+  );
+  useEffect(() => {
+    return unsubscribe;
+  }, []);
   return (
     <div ref={guestRef} className="quest-select">
       <TagInput
         type="lock"
         label="guests"
-        onContainerClick={openModal}
+        onContainerClick={() => (open ? closeModal : openModal)()}
         value={`${totalGuest} guest${totalGuest > 1 ? 's' : ''}`}
         forceLabelShow
       />
@@ -56,16 +71,16 @@ const GuestDropDown: FC<GuestDropDownProps> = ({ items }) => {
   );
 
   return (
-    <div>
+    <div className="guest-dropdown">
       <ul>
         {Array.from(
           categoryMetric.values(),
-          ({ id, category, extraInfo, max, picked }) => {
+          ({ id, category, extraInfo, max, picked }, i) => {
             const disableDecrement = picked <= 0;
             const disableIncrement = picked >= max;
 
             return (
-              <li>
+              <li key={i}>
                 <div>
                   <h3>{category}</h3>
                   <p>{extraInfo}</p>

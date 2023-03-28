@@ -16,13 +16,11 @@ const parseEmailSchema = (email: string | { email: string }) =>
 type VerifyUserHandler = RequestHandler<any, any, string | { email: string }>;
 
 const verifyUser: VerifyUserHandler = async (req, res, next) => {
-  console.log(req.body);
   try {
     const email = parseEmailSchema(req.body);
     const user = await User.findOne({ email });
     return res.status(200).json({ exist: !!user });
   } catch (e) {
-    console.log(e);
     next(e);
   }
 };
@@ -85,7 +83,6 @@ const protectedAuthRoute =
   async (req, res, next) => {
     const { skipResponse } = option ?? {};
     const accessToken = req.cookies[ACCESS_TOKEN_NAME];
-    console.log({ accessToken });
 
     if (accessToken) {
       const authStatus = await getUserAuthStatus(accessToken);

@@ -7,6 +7,7 @@ import { useLayoutEffect } from 'react';
 import { fetchFn } from '../../store/api/baseUrl';
 import { LogDurationPicker } from '../../ui/duration';
 import { GuestSelection } from '../../ui/guestSelection';
+import { ModalProvider } from '../../ui/ModalProvider';
 import './style.css';
 
 type BookingInfo = BookingDoc;
@@ -97,14 +98,29 @@ const BookingForm: FC<BookingProps> = ({
             }
           }}
         >
-          <div className="guest-group">
-            <LogDurationPicker
-              checkinDate={checkinDate}
-              checkoutDate={checkoutDate}
-              checkPlacement={checkPlacement}
-            />
+          <div className="guest-group" onClickCapture={() => {}}>
+            <ModalProvider>
+              <LogDurationPicker
+                checkinDate={checkinDate}
+                checkoutDate={checkoutDate}
+                checkPlacement={checkPlacement}
+              />
 
-            <GuestSelection dropDownItems={[]} />
+              <GuestSelection
+                dropDownItems={[
+                  {
+                    category: 'adult',
+                    extraInfo: 'over the age of 18+',
+                    max: 4,
+                  },
+                  {
+                    category: 'childrens',
+                    extraInfo: 'between the age of 4 - 14',
+                    max: 2,
+                  },
+                ]}
+              />
+            </ModalProvider>
           </div>
           <div className="sample"></div>
 

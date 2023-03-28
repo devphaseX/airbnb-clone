@@ -6,6 +6,10 @@ import './style.css';
 import { useModal } from '../../hooks/useModal';
 import { useRef } from 'react';
 import { getCompliantDateOutput } from '../../util';
+import { useModalContext } from '../ModalProvider';
+import { useEffect } from 'react';
+import { useMemo } from 'react';
+import { useId } from 'react';
 
 interface LogDurationPickerProps {
   checkinDate: Date | string;
@@ -14,21 +18,34 @@ interface LogDurationPickerProps {
 }
 
 export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
-  const [{ from: checkinDate, to: checkoutDate }] = checkPlacement ?? [];
+  const [{ from: checkinDate }] = checkPlacement ?? [];
   const [userPickedCheckin, setUserPickedCheckin] = useState<Date | null>(
     new Date(checkinDate)
   );
   const [userPickedCheckout, setUserPickedCheckout] = useState<Date | null>(
     null
   );
+  const [open, setOpen] = useState(false);
+  const { register } = useModalContext();
+  const id = useId();
+
+  const { openModal, closeModal, unsubscribe } = useMemo(
+    () =>
+      register({
+        id,
+        observer: (open) => setOpen(open),
+        boundaryClass: '.quest-select',
+      }),
+    []
+  );
+
+  useEffect(() => {
+    return unsubscribe;
+  }, []);
 
   const [active, setActive] = useState<1 | 2>(1);
 
   const durationRef = useRef<HTMLDivElement | null>(null);
-
-  const [open, { openModal, closeModal }] = useModal(durationRef, {
-    boundaryClass: 'log-duration',
-  });
 
   return (
     <div id="duration" className="log-duration">
