@@ -1,12 +1,23 @@
 import { useLayoutEffect, useState, useRef, useEffect, type FC } from 'react';
-import { differenceInCalendarDays, addDays, endOfMonth } from 'date-fns';
+import {
+  differenceInCalendarDays,
+  addDays,
+  endOfMonth,
+  subDays,
+} from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { TagInput } from '../input';
 import './style.css';
 import { useMemo } from 'react';
+import { useCallback } from 'react';
 
 type DatePickerFn = (date: Date | null) => void;
+
+interface ValidationResult {
+  kind: string;
+  info: string;
+}
 
 interface TimeCheck {
   currentPicked?: Date;
@@ -31,8 +42,11 @@ const pickedAvailablePlacement = (
     (placement) => choosenTime >= placement.from && choosenTime <= placement.to
   );
 
-const resetSymbol = Symbol();
-
+interface DatePatternMatchGroup {
+  month: `${number}`;
+  day: `${number}`;
+  year: `${number}`;
+}
 const datePattern = /(?<month>\d{1,2})\/(?<day>\d{1,2})\/(?<year>\d{4})/;
 
 const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
@@ -86,7 +100,10 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 
   const offPlacements = useMemo(() => {
     if (checkPlacement.length) {
-      const startOffDate = { from: new Date(0), to: checkPlacement[0].from };
+      const startOffDate = {
+        from: new Date(0),
+        to: subDays(checkPlacement[0].from, 1),
+      };
 
       const offDates = checkPlacement.map((first, i, list) =>
         i === 0 ? first : { from: addDays(list[i - 1].to, 1), to: first.from }
@@ -103,6 +120,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
     }
     return [{ from: new Date(0), to: endOfMonth(new Date()) }];
   }, [checkPlacement, currentNavigateYear, active]);
+  console.log(offPlacements);
 
   const { startDate, endDate } = useMemo(() => {
     const [start, end] =
@@ -119,6 +137,11 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
   const [userEnteredCheckout, setUserEnteredCheckout] = useState<string | null>(
     null //due to multiple checkin duration cannot infer the checkout so we result to input mode empty string
   );
+
+  const [checkinValidateResult, setCheckinValidateResult] =
+    useState<ValidationResult | null>(null);
+  const [checkoutValidatResult, setCheckoutValidateResult] =
+    useState<ValidationResult | null>(null);
 
   const { pickDate: pickCheckinDate, currentPicked: pickedFrom } = checkin;
   const { pickDate: pickCheckoutDate, currentPicked: pickedTo } = checkout;
@@ -153,6 +176,35 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
     }
   }, [userPickedCheckin]);
 
+  const validateMessageTimerFn = useCallback(
+    (fn: (value: React.SetStateAction<ValidationResult | null>) => void) => {
+      let isDone = false;
+      const id = setTimeout(() => {
+        isDone = true;
+        fn(null);
+      }, 2000);
+
+      return () => {
+        !isDone && clearTimeout(id);
+      };
+    },
+
+    []
+  );
+
+  useLayoutEffect(() => {
+    if (checkinValidateResult) {
+      return validateMessageTimerFn(setCheckinValidateResult);
+    }
+  }, [checkinValidateResult]);
+
+  useLayoutEffect(() => {
+    if (checkoutValidatResult) {
+      return validateMessageTimerFn(setCheckoutValidateResult);
+    }
+  }, [checkoutValidatResult]);
+  console.log({ checkinValidateResult, checkoutValidatResult });
+
   useLayoutEffect(() => {
     const checkinButton = checkinRef.current;
     const checkoutButton = checkoutRef.current;
@@ -177,7 +229,105 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           </h3>
           <p>Add your traveling date for exact pricing</p>
         </div>
-        <div className="date-picker__action">
+        <div
+          className="date-picker__action"
+          onKeyDown={(event) => {
+            if (event.code.toLowerCase() !== 'enter') return;
+
+            debugger;
+            const button = (event.target as HTMLElement).closest(
+              `.date-picker__action button`
+            );
+
+            const datePickerActionEl = event.currentTarget as HTMLElement;
+            if (!datePickerActionEl.contains(button)) return;
+
+            const checkButtonType =
+              datePickerActionEl.firstElementChild === button
+                ? 'checkin'
+                : 'checkout';
+
+            let userEnteredCheckValue;
+            let userPickedCheckFn;
+            let userSetValidateResultFn;
+
+            if (checkButtonType === 'checkin') {
+              userEnteredCheckValue = userEnteredCheckin;
+              userPickedCheckFn = setUserPickedCheckin;
+              userSetValidateResultFn = setCheckinValidateResult;
+            } else {
+              userEnteredCheckValue = userEnteredCheckout;
+              userPickedCheckFn = setUserPickedCheckout;
+              userSetValidateResultFn = setCheckoutValidateResult;
+            }
+
+            if (userEnteredCheckValue === null) return;
+
+            if (userEnteredCheckValue.trim() === '') {
+              return userSetValidateResultFn({
+                kind: 'Empty date',
+                info: 'input a date in the format of MM/DD/YYYY',
+              });
+            }
+
+            const matchExpectedDateFormat =
+              userEnteredCheckValue.match(datePattern);
+            if (!matchExpectedDateFormat) {
+              return userSetValidateResultFn({
+                kind: 'Invalid date formate',
+                info: 'date to be inputted in the format MM/DD/YYYY',
+              });
+            }
+
+            const { month, day, year } =
+              matchExpectedDateFormat.groups as unknown as DatePatternMatchGroup;
+            const searchDate = new Date(+year, +month - 1, +day);
+
+            if (Number.isNaN(searchDate.getTime())) {
+              return userSetValidateResultFn({
+                kind: 'Invalid date provided',
+                info: 'Ensure you are providing a valid date.',
+              });
+            }
+
+            const searchDateGroup = pickedAvailablePlacement(
+              checkPlacement,
+              searchDate
+            );
+
+            const checkWithDateGroup = pickedAvailablePlacement(
+              checkPlacement,
+              userPickedCheckin!
+            );
+
+            if (!searchDateGroup) {
+              return userSetValidateResultFn({
+                kind: 'Booking within this period not allowed',
+                info: 'We are not accepting any bookings within this period',
+              });
+            }
+
+            if (checkButtonType === 'checkout') {
+              if (searchDateGroup !== checkWithDateGroup) {
+                return userSetValidateResultFn({
+                  kind: 'selecting checkout from a different log period',
+                  info: 'You are not allowed to select a different log period i.e not same with checkin',
+                });
+              }
+
+              if (searchDate < userPickedCheckin!) {
+                return userSetValidateResultFn({
+                  kind: 'The time of checkout should preceed that of checkin',
+                  info: 'You provided a checkout time that is way ahead of the checkin time.',
+                });
+              }
+            }
+
+            userPickedCheckFn(searchDate);
+
+            event.stopPropagation();
+          }}
+        >
           <button
             type="button"
             onClickCapture={(event) => {
@@ -208,6 +358,16 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               }}
               onBlur={() => {
                 if (userEnteredCheckin) setUserEnteredCheckin(null);
+              }}
+              onKeyDown={(event) => {
+                if (
+                  userEnteredCheckout &&
+                  event.code.toLowerCase() === 'enter' &&
+                  !checkoutValidatResult
+                ) {
+                }
+
+                event.stopPropagation();
               }}
               forceLabelShow
               Icon={() => (
@@ -259,7 +419,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 ''
               }
               onBlur={() => {
-                if (userEnteredCheckout === '') setUserEnteredCheckout(null);
+                if (userEnteredCheckout !== null) setUserEnteredCheckout(null);
               }}
               onChange={(event) => {
                 setUserEnteredCheckout(
