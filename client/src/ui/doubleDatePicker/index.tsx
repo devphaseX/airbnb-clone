@@ -11,6 +11,7 @@ import { TagInput } from '../input';
 import './style.css';
 import { useMemo } from 'react';
 import { useCallback } from 'react';
+import { getCompliantDateOutput, parseDateInCompliant } from '../../util';
 
 type DatePickerFn = (date: Date | null) => void;
 
@@ -234,7 +235,6 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
           onKeyDown={(event) => {
             if (event.code.toLowerCase() !== 'enter') return;
 
-            debugger;
             const button = (event.target as HTMLElement).closest(
               `.date-picker__action button`
             );
@@ -281,7 +281,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
 
             const { month, day, year } =
               matchExpectedDateFormat.groups as unknown as DatePatternMatchGroup;
-            const searchDate = new Date(+year, +month - 1, +day);
+            const searchDate = parseDateInCompliant(year, month, day);
 
             if (Number.isNaN(searchDate.getTime())) {
               return userSetValidateResultFn({
@@ -322,7 +322,7 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
                 });
               }
             }
-
+            debugger;
             userPickedCheckFn(searchDate);
 
             event.stopPropagation();
@@ -349,7 +349,8 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               type="text"
               value={
                 userEnteredCheckin ??
-                userPickedCheckin?.toLocaleDateString() ??
+                (userPickedCheckin &&
+                  getCompliantDateOutput(userPickedCheckin)) ??
                 defaultPlacement.from.toLocaleString()
               }
               onChange={(event) => {
@@ -415,7 +416,8 @@ const DoubleDatePicker: FC<DoubleDatePickerProps> = ({
               type="text"
               value={
                 userEnteredCheckout ??
-                userPickedCheckout?.toLocaleDateString() ??
+                (userPickedCheckout &&
+                  getCompliantDateOutput(userPickedCheckout)) ??
                 ''
               }
               onBlur={() => {

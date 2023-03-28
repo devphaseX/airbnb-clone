@@ -5,9 +5,9 @@ import 'react-day-picker/dist/style.css';
 import './style.css';
 import { useModal } from '../../hooks/useModal';
 import { useRef } from 'react';
+import { getCompliantDateOutput } from '../../util';
 
 const getPlaceholderDate = () => `dd/mm/yyyy`;
-const getLocaleDate = (date: Date) => date.toLocaleDateString();
 
 interface LogDurationPickerProps {
   checkinDate: Date | string;
@@ -67,7 +67,8 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
             label="checkin"
             type="lock"
             value={
-              (userPickedCheckin && getLocaleDate(userPickedCheckin)) ??
+              (userPickedCheckin &&
+                getCompliantDateOutput(userPickedCheckin)) ??
               getPlaceholderDate()
             }
             forceLabelShow
@@ -76,7 +77,8 @@ export function LogDurationPicker({ checkPlacement }: LogDurationPickerProps) {
             label="checkout"
             type="lock"
             value={
-              (userPickedCheckout && getLocaleDate(userPickedCheckout)) ??
+              (userPickedCheckout &&
+                getCompliantDateOutput(userPickedCheckout)) ??
               getPlaceholderDate()
             }
             forceLabelShow

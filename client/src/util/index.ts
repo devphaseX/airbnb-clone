@@ -48,7 +48,20 @@ const getPromisePart = <T>() => {
   return { promise, resolve, reject };
 };
 
+const getCompliantDateOutput = (date: Date | null) =>
+  date === null
+    ? 'MM/DD/YYYY'
+    : `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+
+const parseDateInCompliant = (
+  year: `${number}`,
+  month: `${number}`,
+  date: `${number}`
+) => new Date(+year, +month - 1, +date);
+
 export {
+  getCompliantDateOutput,
+  parseDateInCompliant,
   mergeStyleClassName,
   authRoutePattern,
   sleep,
